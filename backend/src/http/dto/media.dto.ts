@@ -19,6 +19,8 @@ export type MediaPublicDTO = {
 
     previewUrl: string | null;
     tags: TagPublicDTO[];
+
+    favorite: boolean;
 };
 
 export type MediaUserDTO = MediaPublicDTO & {
@@ -67,6 +69,8 @@ export function toMediaDTO(
                 addedAt: t.addedAt,
             })
         ),
+
+        favorite: !!media.favorite,
     };
 
     if (!viewer) return base;

@@ -59,6 +59,8 @@ function mapMedia(m: any) {
             addedAt: l.addedAt,
         })) ?? [];
 
+    const favorite = Array.isArray(m.favorites) && m.favorites.length > 0;
+
     return {
         id: m.id,
         hash: m.hash,
@@ -89,6 +91,19 @@ function mapMedia(m: any) {
         deletedBy: m.deletedBy,
 
         tags,
+        favorite,
+    };
+}
+
+function buildFavoriteInclude(viewer: Viewer) {
+    if (!viewer?.id) return false;
+
+    return {
+        favorites: {
+            where: { userId: viewer.id },
+            select: { id: true },
+            take: 1,
+        },
     };
 }
 
@@ -108,6 +123,7 @@ export async function getMediaByIdVisible(id: string, viewer: Viewer) {
                 },
                 orderBy: { addedAt: 'asc' },
             },
+            ...(buildFavoriteInclude(viewer) as any),
         },
     });
 
@@ -152,6 +168,7 @@ export async function listMediaVisible(params: {
                 },
                 orderBy: { addedAt: 'asc' },
             },
+            ...(buildFavoriteInclude(params.viewer) as any),
         },
     });
 
