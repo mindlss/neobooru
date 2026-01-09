@@ -78,7 +78,7 @@ model User {
   comments    Comment[]
   ratings     Rating[]
   media       Media[]       @relation("UserUploads")
-  favorites   Media[]       @relation("UserFavorites")
+  favorites Favorite[]
   viewHistory ViewHistory[]
 
   reports         Report[] @relation("UserReports")
@@ -225,7 +225,7 @@ model Media {
   comics      ComicPage[]
   comments    Comment[]
   ratings     Rating[]
-  likedBy     User[]        @relation("UserFavorites")
+  favorites Favorite[]
   viewHistory ViewHistory[]
 
   @@index([randomKey])
@@ -413,4 +413,20 @@ model Notification {
   isRead  Boolean @default(false)
 
   user User @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ==================== FAVORITES ====================
+
+model Favorite {
+  id        String   @id @default(uuid())
+  userId    String
+  mediaId   String
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  media Media @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, mediaId])
+  @@index([userId, createdAt])
+  @@index([mediaId, createdAt])
 }

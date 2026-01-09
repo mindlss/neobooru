@@ -6,3 +6,7 @@ export const mediaListQuerySchema = z.object({
     sort: z.enum(['new', 'old']).default('new'),
     type: z.enum(['IMAGE', 'VIDEO']).optional(),
 });
+
+export const mediaIdParamsSchema = z.object({
+    id: z.string().uuid(),
+});
