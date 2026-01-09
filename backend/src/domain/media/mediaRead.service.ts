@@ -60,6 +60,10 @@ function mapMedia(m: any) {
         })) ?? [];
 
     const favorite = Array.isArray(m.favorites) && m.favorites.length > 0;
+    const myRating =
+        Array.isArray(m.ratings) && m.ratings.length > 0
+            ? m.ratings[0].value
+            : null;
 
     return {
         id: m.id,
@@ -74,6 +78,10 @@ function mapMedia(m: any) {
 
         description: m.description,
         isExplicit: m.isExplicit,
+
+        ratingAvg: m.ratingAvg ?? 0,
+        ratingCount: m.ratingCount ?? 0,
+        myRating,
 
         originalKey: m.originalKey,
         previewKey: m.previewKey,
@@ -107,6 +115,18 @@ function buildFavoriteInclude(viewer: Viewer) {
     };
 }
 
+function buildMyRatingInclude(viewer: Viewer) {
+    if (!viewer?.id) return false;
+
+    return {
+        ratings: {
+            where: { userId: viewer.id },
+            select: { value: true },
+            take: 1,
+        },
+    };
+}
+
 export async function getMediaByIdVisible(id: string, viewer: Viewer) {
     const where = { id, ...buildVisibilityWhere(viewer) };
 
@@ -124,6 +144,7 @@ export async function getMediaByIdVisible(id: string, viewer: Viewer) {
                 orderBy: { addedAt: 'asc' },
             },
             ...(buildFavoriteInclude(viewer) as any),
+            ...(buildMyRatingInclude(viewer) as any),
         },
     });
 
@@ -169,6 +190,7 @@ export async function listMediaVisible(params: {
                 orderBy: { addedAt: 'asc' },
             },
             ...(buildFavoriteInclude(params.viewer) as any),
+            ...(buildMyRatingInclude(params.viewer) as any),
         },
     });
 

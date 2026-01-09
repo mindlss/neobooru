@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { uploadMedia } from '../controllers/media.controller';
 import { listMedia, getMedia } from '../controllers/mediaRead.controller';
 import { favorite, unfavorite } from '../controllers/favorites.controller';
+import { rateMedia, unrateMedia } from '../controllers/ratings.controller';
 import { authMiddleware } from '../middlewares/auth.middleware';
 import { optionalAuthMiddleware } from '../middlewares/optionalAuth.middleware';
 import { currentUserMiddleware } from '../middlewares/currentUser.middleware';
@@ -28,6 +29,7 @@ mediaRouter.post(
     uploadMedia
 );
 
+// favorites
 mediaRouter.post(
     '/media/:id/favorite',
     authMiddleware,
@@ -44,4 +46,29 @@ mediaRouter.delete(
     requireNotBanned,
     requireNoActiveRestriction(RestrictionType.FULL_BAN),
     unfavorite
+);
+
+// ratings
+mediaRouter.post(
+    '/media/:id/rating',
+    authMiddleware,
+    currentUserMiddleware,
+    requireNotBanned,
+    requireNoActiveRestriction(
+        RestrictionType.RATING_BAN,
+        RestrictionType.FULL_BAN
+    ),
+    rateMedia
+);
+
+mediaRouter.delete(
+    '/media/:id/rating',
+    authMiddleware,
+    currentUserMiddleware,
+    requireNotBanned,
+    requireNoActiveRestriction(
+        RestrictionType.RATING_BAN,
+        RestrictionType.FULL_BAN
+    ),
+    unrateMedia
 );

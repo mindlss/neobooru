@@ -21,6 +21,11 @@ export type MediaPublicDTO = {
     tags: TagPublicDTO[];
 
     favorite: boolean;
+
+    // NEW
+    ratingAvg: number;
+    ratingCount: number;
+    myRating: number | null;
 };
 
 export type MediaUserDTO = MediaPublicDTO & {
@@ -71,6 +76,11 @@ export function toMediaDTO(
         ),
 
         favorite: !!media.favorite,
+
+        ratingAvg: typeof media.ratingAvg === 'number' ? media.ratingAvg : 0,
+        ratingCount:
+            typeof media.ratingCount === 'number' ? media.ratingCount : 0,
+        myRating: typeof media.myRating === 'number' ? media.myRating : null,
     };
 
     if (!viewer) return base;
