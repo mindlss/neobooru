@@ -9,6 +9,14 @@ declare global {
             };
 
             currentUser?: User;
+
+            viewer?: {
+                id?: string;
+                role: UserRole;
+                isAdult: boolean;
+            };
+
+            requestId?: string;
         }
     }
 }

@@ -189,6 +189,7 @@ model Media {
   id          String  @id @default(uuid())
   originalKey String
   previewKey  String?
+  randomKey   Float   @default(dbgenerated("random()")) @db.DoublePrecision
   hash        String  @unique
   contentType String
   size        Int
@@ -208,6 +209,11 @@ model Media {
   moderationNotes  String?
   isExplicit       Boolean          @default(false)
 
+  // ===== Rating denormalization =====
+  ratingCount Int   @default(0)
+  ratingSum   Int   @default(0)
+  ratingAvg   Float @default(0) @db.DoublePrecision
+
   deletedAt DateTime?
   deletedBy String?
 
@@ -221,6 +227,12 @@ model Media {
   ratings     Rating[]
   likedBy     User[]        @relation("UserFavorites")
   viewHistory ViewHistory[]
+
+  @@index([randomKey])
+
+  // Для сортировок:
+  @@index([ratingAvg])
+  @@index([ratingCount])
 }
 
 // ==================== MEDIA TAGS ====================
@@ -234,6 +246,7 @@ model MediaTags {
   tag   Tag   @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@id([mediaId, tagId])
+  @@index([tagId, mediaId])
 }
 
 // ==================== COMICS ====================
@@ -375,6 +388,8 @@ model ModerationLog {
   targetType  String
   targetId    String
   moderatorId String
+
+  details Json? // <── НОВОЕ
 
   createdAt DateTime @default(now())
 

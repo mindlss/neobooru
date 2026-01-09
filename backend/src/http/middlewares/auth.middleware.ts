@@ -1,18 +1,22 @@
-import { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import { verifyAccessToken } from '../../domain/auth/token.service';
+import { apiError } from '../errors/ApiError';
 
 export function authMiddleware(
     req: Request,
-    res: Response,
+    _res: Response,
     next: NextFunction
 ) {
     const header = req.headers.authorization;
     if (!header?.startsWith('Bearer ')) {
-        return res.status(401).json({ error: 'UNAUTHORIZED' });
+        return next(apiError(401, 'UNAUTHORIZED', 'Missing Bearer token'));
     }
 
     try {
-        const token = header.slice(7);
+        const token = header.slice(7).trim();
+        if (!token)
+            return next(apiError(401, 'UNAUTHORIZED', 'Missing Bearer token'));
+
         const payload = verifyAccessToken(token);
 
         req.user = {
@@ -21,7 +25,7 @@ export function authMiddleware(
         };
 
         next();
-    } catch {
-        res.status(401).json({ error: 'INVALID_TOKEN' });
+    } catch (e) {
+        next(e);
     }
 }

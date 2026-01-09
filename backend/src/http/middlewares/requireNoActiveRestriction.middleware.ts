@@ -4,7 +4,8 @@ import { prisma } from '../../lib/prisma';
 
 export function requireNoActiveRestriction(...types: RestrictionType[]) {
     return async (req: Request, res: Response, next: NextFunction) => {
-        const userId = req.user?.id;
+        const userId = req.currentUser?.id ?? req.user?.id;
+
         if (!userId) {
             return res.status(401).json({
                 error: { code: 'UNAUTHORIZED', message: 'Missing auth' },
@@ -18,13 +19,27 @@ export function requireNoActiveRestriction(...types: RestrictionType[]) {
                 userId,
                 isActive: true,
                 type: { in: types },
-                OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
             },
             orderBy: { issuedAt: 'desc' },
         });
 
         if (!restriction) return next();
 
+        // If expired -> auto-deactivate and allow action
+        if (restriction.expiresAt && restriction.expiresAt <= now) {
+            await prisma.restriction.update({
+                where: { id: restriction.id },
+                data: {
+                    isActive: false,
+                    revokedAt: now,
+                    // revokedById intentionally left null (system auto-revoke)
+                },
+            });
+
+            return next();
+        }
+
+        // Still active (no expiresAt or expiresAt in future)
         return res.status(403).json({
             error: {
                 code: 'RESTRICTED',

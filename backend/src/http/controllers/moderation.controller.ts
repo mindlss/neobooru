@@ -22,49 +22,49 @@ export const getQueue = asyncHandler(async (req, res) => {
 });
 
 export const approve = asyncHandler(async (req, res) => {
-    if (!req.user?.id)
-        return res.status(401).json({ error: { code: 'UNAUTHORIZED' } });
-
     const { id } = req.params;
     const body = moderationActionSchema.parse(req.body);
 
-    try {
-        const updated = await approveMedia({
-            mediaId: id,
-            moderatorId: req.user.id,
-            notes: body.notes,
+    if (!req.currentUser) {
+        return res.status(500).json({
+            error: { code: 'INTERNAL', message: 'currentUser not loaded' },
         });
-
-        res.json({
-            status: 'ok',
-            mediaId: updated.id,
-            moderationStatus: updated.moderationStatus,
-        });
-    } catch {
-        res.status(404).json({ error: { code: 'NOT_FOUND' } });
     }
+
+    const updated = await approveMedia({
+        mediaId: id,
+        moderatorId: req.currentUser.id,
+        notes: body.notes,
+        requestId: req.requestId,
+    });
+
+    res.json({
+        status: 'ok',
+        mediaId: updated.id,
+        moderationStatus: updated.moderationStatus,
+    });
 });
 
 export const reject = asyncHandler(async (req, res) => {
-    if (!req.user?.id)
-        return res.status(401).json({ error: { code: 'UNAUTHORIZED' } });
-
     const { id } = req.params;
     const body = moderationActionSchema.parse(req.body);
 
-    try {
-        const updated = await rejectMedia({
-            mediaId: id,
-            moderatorId: req.user.id,
-            notes: body.notes,
+    if (!req.currentUser) {
+        return res.status(500).json({
+            error: { code: 'INTERNAL', message: 'currentUser not loaded' },
         });
-
-        res.json({
-            status: 'ok',
-            mediaId: updated.id,
-            moderationStatus: updated.moderationStatus,
-        });
-    } catch {
-        res.status(404).json({ error: { code: 'NOT_FOUND' } });
     }
+
+    const updated = await rejectMedia({
+        mediaId: id,
+        moderatorId: req.currentUser.id,
+        notes: body.notes,
+        requestId: req.requestId,
+    });
+
+    res.json({
+        status: 'ok',
+        mediaId: updated.id,
+        moderationStatus: updated.moderationStatus,
+    });
 });

@@ -3,27 +3,39 @@ import { minio } from '../../lib/minio';
 import { env } from '../../config/env';
 import { ModerationStatus, UserRole } from '@prisma/client';
 
-type AuthUser = { id: string; role: UserRole } | undefined;
+type Viewer = { id?: string; role: UserRole; isAdult: boolean } | undefined;
 
-function isModerator(user: AuthUser) {
-    return user?.role === UserRole.MODERATOR || user?.role === UserRole.ADMIN;
+function isModerator(viewer: Viewer) {
+    return (
+        viewer?.role === UserRole.MODERATOR || viewer?.role === UserRole.ADMIN
+    );
 }
 
-function buildVisibilityWhere(user: AuthUser) {
-    if (isModerator(user)) return {};
+function isGuest(viewer: Viewer) {
+    return !viewer || viewer.role === UserRole.GUEST;
+}
 
-    if (user) {
+function buildVisibilityWhere(viewer: Viewer) {
+    if (isModerator(viewer)) return {};
+
+    if (isGuest(viewer)) {
         return {
             deletedAt: null,
-            moderationStatus: { not: ModerationStatus.REJECTED },
+            moderationStatus: ModerationStatus.APPROVED,
+            isExplicit: false,
         };
     }
 
-    return {
+    const base: any = {
         deletedAt: null,
-        moderationStatus: ModerationStatus.APPROVED,
-        isExplicit: false,
+        moderationStatus: { not: ModerationStatus.REJECTED },
     };
+
+    if (!viewer?.isAdult) {
+        base.isExplicit = false;
+    }
+
+    return base;
 }
 
 async function presign(key: string) {
@@ -80,8 +92,8 @@ function mapMedia(m: any) {
     };
 }
 
-export async function getMediaByIdVisible(id: string, user: AuthUser) {
-    const where = { id, ...buildVisibilityWhere(user) };
+export async function getMediaByIdVisible(id: string, viewer: Viewer) {
+    const where = { id, ...buildVisibilityWhere(viewer) };
 
     const media = await prisma.media.findFirst({
         where,
@@ -112,14 +124,14 @@ export async function getMediaByIdVisible(id: string, user: AuthUser) {
 }
 
 export async function listMediaVisible(params: {
-    user: AuthUser;
+    viewer: Viewer;
     limit: number;
     cursor?: string;
     sort: 'new' | 'old';
     type?: 'IMAGE' | 'VIDEO';
 }) {
     const take = Math.min(Math.max(params.limit, 1), 100);
-    const where: any = buildVisibilityWhere(params.user);
+    const where: any = buildVisibilityWhere(params.viewer);
 
     if (params.type) where.type = params.type;
 

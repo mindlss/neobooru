@@ -1,5 +1,19 @@
 import type { Request, Response, NextFunction } from 'express';
 import { prisma } from '../../lib/prisma';
+import { UserRole } from '@prisma/client';
+
+function computeIsAdult(birthDate: Date | null | undefined): boolean {
+    if (!birthDate) return false;
+
+    const now = new Date();
+    const eighteenYearsAgo = new Date(
+        now.getFullYear() - 18,
+        now.getMonth(),
+        now.getDate()
+    );
+
+    return birthDate <= eighteenYearsAgo;
+}
 
 export async function currentUserMiddleware(
     req: Request,
@@ -23,5 +37,12 @@ export async function currentUserMiddleware(
     }
 
     req.currentUser = user;
+
+    req.viewer = {
+        id: user.id,
+        role: user.role,
+        isAdult: computeIsAdult(user.birthDate),
+    };
+
     next();
 }
