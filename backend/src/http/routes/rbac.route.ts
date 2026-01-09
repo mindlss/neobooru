@@ -5,20 +5,27 @@ import { requireRole } from '../middlewares/requireRole.middleware';
 import { requireNotBanned } from '../middlewares/requireNotBanned.middleware';
 import { requireNoActiveRestriction } from '../middlewares/requireNoActiveRestriction.middleware';
 import { RestrictionType, UserRole } from '@prisma/client';
+import { toUserSelfDTO } from '../dto';
+import { getUserSelf } from '../../domain/users/user.service';
+import { apiError } from '../errors/ApiError';
 
 export const rbacRouter = Router();
 
-rbacRouter.get('/me', authMiddleware, currentUserMiddleware, (req, res) => {
-    const u = req.currentUser!;
-    res.json({
-        id: u.id,
-        username: u.username,
-        email: u.email,
-        role: u.role,
-        isBanned: u.isBanned,
-        createdAt: u.createdAt,
-    });
-});
+rbacRouter.get(
+    '/me',
+    authMiddleware,
+    currentUserMiddleware,
+    async (req, res, next) => {
+        try {
+            const u = req.currentUser!;
+            const full = await getUserSelf(u.id);
+            if (!full) throw apiError(401, 'UNAUTHORIZED', 'User not found');
+            res.json(toUserSelfDTO(full));
+        } catch (e) {
+            next(e);
+        }
+    }
+);
 
 rbacRouter.get(
     '/admin/ping',
