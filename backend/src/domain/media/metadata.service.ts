@@ -104,7 +104,7 @@ export async function extractMetadataFromTempFile(
             width: v.width,
             height: v.height,
             duration: v.duration,
-            isAnimated: false,
+            isAnimated: true,
         };
     }
 
