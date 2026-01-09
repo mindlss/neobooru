@@ -46,6 +46,11 @@ enum ModerationStatus {
   REJECTED
 }
 
+enum CommentDeletedKind {
+  USER
+  MODERATOR
+}
+
 // ==================== USERS ====================
 
 model User {
@@ -203,6 +208,8 @@ model Media {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
+  commentCount Int @default(0)
+
   moderationStatus ModerationStatus @default(PENDING)
   moderatedAt      DateTime?
   moderatedById    String?
@@ -229,6 +236,7 @@ model Media {
   viewHistory ViewHistory[]
 
   @@index([randomKey])
+  @@index([commentCount])
 
   // Для сортировок:
   @@index([ratingAvg])
@@ -330,10 +338,19 @@ model Comment {
   userId   String
   parentId String?
 
+  deletedAt     DateTime?
+  deletedById   String?
+  deletedKind   CommentDeletedKind?
+  deletedReason String?
+
   media   Media     @relation(fields: [mediaId], references: [id], onDelete: Cascade)
   user    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   parent  Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
   replies Comment[] @relation("CommentReplies")
+
+  @@index([mediaId])
+  @@index([mediaId, deletedAt])
+  @@index([parentId])
 }
 
 // ==================== RATINGS ====================
