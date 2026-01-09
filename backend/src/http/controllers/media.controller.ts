@@ -41,6 +41,8 @@ export const uploadMedia = asyncHandler(async (req, res) => {
             size: parsed.size,
             mimeType: parsed.mimeType,
             uploadedById: req.user.id,
+            description: parsed.description,
+            tagsRaw: parsed.tagsRaw,
         });
 
         return res.status(201).json(toMediaUploadDTO(media));
