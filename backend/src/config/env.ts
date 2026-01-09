@@ -18,6 +18,8 @@ const EnvSchema = z.object({
     MINIO_ACCESS_KEY: z.string().min(1),
     MINIO_SECRET_KEY: z.string().min(1),
     MINIO_BUCKET: z.string().min(1),
+    JWT_SECRET: z.string().min(32),
+    JWT_EXPIRES_IN: z.coerce.number().int().positive().default(900),
 });
 
 const parsed = EnvSchema.safeParse(process.env);
