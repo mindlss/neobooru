@@ -273,11 +273,15 @@ model Tag {
   id         String @id @default(uuid())
   name       String @unique
   categoryId String
+  usageCount Int @default(0)
 
   category   TagCategory  @relation(fields: [categoryId], references: [id])
   mediaLinks MediaTags[]
   aliases    TagAlias[]
   history    TagHistory[]
+
+  @@index([usageCount])
+  @@index([name])
 }
 
 model TagAlias {

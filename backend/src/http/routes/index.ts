@@ -6,6 +6,7 @@ import { authRouter } from './auth.route';
 import { rbacRouter } from './rbac.route';
 import { mediaRouter } from './media.route';
 import { moderationRouter } from './moderation.route';
+import { taggingRouter } from './tagging.route';
 
 export const apiRouter = Router();
 
@@ -16,3 +17,4 @@ apiRouter.use(authRouter);
 apiRouter.use(rbacRouter);
 apiRouter.use(mediaRouter);
 apiRouter.use(moderationRouter);
+apiRouter.use(taggingRouter);
