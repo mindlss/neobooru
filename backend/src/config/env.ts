@@ -20,6 +20,7 @@ const EnvSchema = z.object({
     MINIO_BUCKET: z.string().min(1),
     JWT_SECRET: z.string().min(32),
     JWT_EXPIRES_IN: z.coerce.number().int().positive().default(900),
+    MAX_UPLOAD_BYTES: z.coerce.number().int().positive().default(104857600),
 });
 
 const parsed = EnvSchema.safeParse(process.env);
