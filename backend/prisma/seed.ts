@@ -48,6 +48,35 @@ async function seedTagCategories() {
     }
 }
 
+async function seedMetaTags() {
+    // Убеждаемся, что категория meta есть
+    const metaCategory = await prisma.tagCategory.findUnique({
+        where: { name: 'meta' },
+        select: { id: true },
+    });
+
+    if (!metaCategory) {
+        throw new Error(
+            'Meta category not found. seedTagCategories() must run before seedMetaTags().'
+        );
+    }
+
+    const autoTags = ['highres', 'animated', 'gif', 'video', 'long', '4k'];
+
+    for (const name of autoTags) {
+        await prisma.tag.upsert({
+            where: { name },
+            update: {
+                categoryId: metaCategory.id,
+            },
+            create: {
+                name,
+                categoryId: metaCategory.id,
+            },
+        });
+    }
+}
+
 async function seedRoleQuotas() {
     const quotas = [
         {
@@ -115,6 +144,7 @@ async function main() {
     });
 
     await seedTagCategories();
+    await seedMetaTags();
     await seedRoleQuotas();
 
     console.log('✅ Seed done');
