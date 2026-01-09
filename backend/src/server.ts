@@ -1,20 +1,35 @@
 import { createApp } from './app';
 import { env } from './config/env';
 import { logger } from './config/logger';
+import { prisma } from './lib/prisma';
+import { ensureBucket } from './lib/minio';
 
 const app = createApp();
 
-const server = app.listen(env.PORT, () => {
-    logger.info({ port: env.PORT, env: env.NODE_ENV }, 'Server started');
-});
+async function start() {
+    await ensureBucket();
 
-function shutdown(signal: string) {
-    logger.info({ signal }, 'Shutting down...');
-    server.close(() => {
-        logger.info('HTTP server closed');
-        process.exit(0);
+    const server = app.listen(env.PORT, () => {
+        logger.info({ port: env.PORT, env: env.NODE_ENV }, 'Server started');
     });
+
+    async function shutdown(signal: string) {
+        logger.info({ signal }, 'Shutting down...');
+        server.close(async () => {
+            try {
+                await prisma.$disconnect();
+                logger.info('Prisma disconnected');
+            } finally {
+                process.exit(0);
+            }
+        });
+    }
+
+    process.on('SIGINT', () => void shutdown('SIGINT'));
+    process.on('SIGTERM', () => void shutdown('SIGTERM'));
 }
 
-process.on('SIGINT', () => shutdown('SIGINT'));
-process.on('SIGTERM', () => shutdown('SIGTERM'));
+start().catch((err) => {
+    logger.fatal({ err }, 'Failed to start server');
+    process.exit(1);
+});
