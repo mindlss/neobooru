@@ -5,6 +5,7 @@ import { storageRouter } from './storage.route';
 import { authRouter } from './auth.route';
 import { rbacRouter } from './rbac.route';
 import { mediaRouter } from './media.route';
+import { moderationRouter } from './moderation.route';
 
 export const apiRouter = Router();
 
@@ -14,3 +15,4 @@ apiRouter.use(storageRouter);
 apiRouter.use(authRouter);
 apiRouter.use(rbacRouter);
 apiRouter.use(mediaRouter);
+apiRouter.use(moderationRouter);
