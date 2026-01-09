@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { uploadMedia } from '../controllers/media.controller';
+import { listMedia, getMedia } from '../controllers/mediaRead.controller';
 import { authMiddleware } from '../middlewares/auth.middleware';
+import { optionalAuthMiddleware } from '../middlewares/optionalAuth.middleware';
 import { currentUserMiddleware } from '../middlewares/currentUser.middleware';
 import { requireNotBanned } from '../middlewares/requireNotBanned.middleware';
 import { requireRole } from '../middlewares/requireRole.middleware';
@@ -8,6 +10,9 @@ import { requireNoActiveRestriction } from '../middlewares/requireNoActiveRestri
 import { RestrictionType, UserRole } from '@prisma/client';
 
 export const mediaRouter = Router();
+
+mediaRouter.get('/media', optionalAuthMiddleware, listMedia);
+mediaRouter.get('/media/:id', optionalAuthMiddleware, getMedia);
 
 mediaRouter.post(
     '/media/upload',

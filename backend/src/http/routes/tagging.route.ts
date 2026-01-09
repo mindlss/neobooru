@@ -8,6 +8,7 @@ import {
     setTags,
     search,
     create,
+    patch,
 } from '../controllers/tagging.controller';
 
 export const taggingRouter = Router();
@@ -40,4 +41,11 @@ taggingRouter.post(
     authMiddleware,
     requireRole(UserRole.MODERATOR, UserRole.ADMIN),
     removeTags
+);
+
+taggingRouter.patch(
+    '/tags/:id',
+    authMiddleware,
+    requireRole(UserRole.MODERATOR, UserRole.ADMIN),
+    patch
 );

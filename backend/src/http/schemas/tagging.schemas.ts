@@ -13,3 +13,11 @@ export const createTagSchema = z.object({
     name: z.string().min(1).max(64),
     categoryId: z.string().uuid(),
 });
+
+export const patchTagSchema = z.object({
+    customColor: z
+        .string()
+        .regex(/^#([0-9a-fA-F]{6})$/, 'Expected HEX color like #RRGGBB')
+        .nullable()
+        .optional(),
+});

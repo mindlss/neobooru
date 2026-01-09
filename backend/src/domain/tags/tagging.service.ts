@@ -168,7 +168,7 @@ export async function setTagsForMedia(mediaId: string, tagNames: string[]) {
 export async function searchTags(q: string, limit: number) {
     const query = normalizeTagName(q);
 
-    return prisma.tag.findMany({
+    const tags = await prisma.tag.findMany({
         where: { name: { startsWith: query } },
         orderBy: [{ usageCount: 'desc' }, { name: 'asc' }],
         take: limit,
@@ -176,9 +176,26 @@ export async function searchTags(q: string, limit: number) {
             id: true,
             name: true,
             usageCount: true,
-            categoryId: true,
+            customColor: true,
+            category: {
+                select: {
+                    id: true,
+                    name: true,
+                    color: true,
+                },
+            },
         },
     });
+
+    return tags.map((t) => ({
+        id: t.id,
+        name: t.name,
+        usageCount: t.usageCount,
+        categoryId: t.category.id,
+        categoryName: t.category.name,
+        color: t.customColor ?? t.category.color,
+        customColor: t.customColor,
+    }));
 }
 
 export async function createTag(input: { name: string; categoryId: string }) {
@@ -188,4 +205,35 @@ export async function createTag(input: { name: string; categoryId: string }) {
         data: { name, categoryId: input.categoryId },
         select: { id: true, name: true, usageCount: true, categoryId: true },
     });
+}
+
+export async function patchTag(
+    tagId: string,
+    input: { customColor?: string | null }
+) {
+    const tag = await prisma.tag.update({
+        where: { id: tagId },
+        data: {
+            ...(input.customColor !== undefined
+                ? { customColor: input.customColor }
+                : {}),
+        },
+        select: {
+            id: true,
+            name: true,
+            usageCount: true,
+            customColor: true,
+            category: { select: { id: true, name: true, color: true } },
+        },
+    });
+
+    return {
+        id: tag.id,
+        name: tag.name,
+        usageCount: tag.usageCount,
+        categoryId: tag.category.id,
+        categoryName: tag.category.name,
+        color: tag.customColor ?? tag.category.color,
+        customColor: tag.customColor,
+    };
 }

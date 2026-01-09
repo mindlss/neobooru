@@ -273,16 +273,19 @@ model Tag {
   id         String @id @default(uuid())
   name       String @unique
   categoryId String
-  usageCount Int @default(0)
+  usageCount Int    @default(0)
+
+  customColor String? // HEX override, например "#FF00AA"
 
   category   TagCategory  @relation(fields: [categoryId], references: [id])
   mediaLinks MediaTags[]
   aliases    TagAlias[]
   history    TagHistory[]
 
-  @@index([usageCount])
   @@index([name])
+  @@index([usageCount])
 }
+
 
 model TagAlias {
   id    String @id @default(uuid())
@@ -367,13 +370,19 @@ model Report {
 // ==================== MODERATION LOGS ====================
 
 model ModerationLog {
-  id          String @id @default(uuid())
+  id          String   @id @default(uuid())
   action      String
   targetType  String
   targetId    String
   moderatorId String
 
+  createdAt DateTime @default(now())
+
   moderator User @relation(fields: [moderatorId], references: [id])
+
+  @@index([targetType, targetId])
+  @@index([moderatorId])
+  @@index([createdAt])
 }
 
 // ==================== NOTIFICATIONS ====================

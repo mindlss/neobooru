@@ -3,6 +3,7 @@ import {
     tagNamesSchema,
     tagSearchSchema,
     createTagSchema,
+    patchTagSchema,
 } from '../schemas/tagging.schemas';
 import {
     addTagsToMedia,
@@ -10,6 +11,7 @@ import {
     setTagsForMedia,
     searchTags,
     createTag,
+    patchTag,
 } from '../../domain/tags/tagging.service';
 
 export const addTags = asyncHandler(async (req, res) => {
@@ -46,4 +48,16 @@ export const create = asyncHandler(async (req, res) => {
     const body = createTagSchema.parse(req.body);
     const tag = await createTag(body);
     res.status(201).json(tag);
+});
+
+export const patch = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const body = patchTagSchema.parse(req.body);
+
+    try {
+        const updated = await patchTag(id, body);
+        res.json(updated);
+    } catch {
+        res.status(404).json({ error: { code: 'NOT_FOUND' } });
+    }
 });
