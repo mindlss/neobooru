@@ -83,6 +83,8 @@ function mapMedia(m: any) {
         ratingCount: m.ratingCount ?? 0,
         myRating,
 
+        commentCount: m.commentCount ?? 0,
+
         originalKey: m.originalKey,
         previewKey: m.previewKey,
 

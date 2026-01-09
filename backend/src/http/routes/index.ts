@@ -8,6 +8,7 @@ import { mediaRouter } from './media.route';
 import { moderationRouter } from './moderation.route';
 import { taggingRouter } from './tagging.route';
 import { userRouter } from './user.route';
+import { commentsRouter } from './comments.route';
 
 export const apiRouter = Router();
 
@@ -20,3 +21,4 @@ apiRouter.use(mediaRouter);
 apiRouter.use(moderationRouter);
 apiRouter.use(taggingRouter);
 apiRouter.use(userRouter);
+apiRouter.use(commentsRouter);

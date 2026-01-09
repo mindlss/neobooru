@@ -338,6 +338,9 @@ model Comment {
   userId   String
   parentId String?
 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   deletedAt     DateTime?
   deletedById   String?
   deletedKind   CommentDeletedKind?

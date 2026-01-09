@@ -22,10 +22,11 @@ export type MediaPublicDTO = {
 
     favorite: boolean;
 
-    // NEW
     ratingAvg: number;
     ratingCount: number;
     myRating: number | null;
+
+    commentCount: number;
 };
 
 export type MediaUserDTO = MediaPublicDTO & {
@@ -81,6 +82,9 @@ export function toMediaDTO(
         ratingCount:
             typeof media.ratingCount === 'number' ? media.ratingCount : 0,
         myRating: typeof media.myRating === 'number' ? media.myRating : null,
+
+        commentCount:
+            typeof media.commentCount === 'number' ? media.commentCount : 0,
     };
 
     if (!viewer) return base;
