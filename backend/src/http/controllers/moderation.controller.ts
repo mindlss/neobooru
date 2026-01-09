@@ -9,9 +9,11 @@ import {
     rejectMedia,
 } from '../../domain/moderation/moderation.service';
 import { toModerationQueueItemDTO } from '../dto';
+import { parseBody, parseQuery } from '../utils/parse';
+import { apiError } from '../errors/ApiError';
 
 export const getQueue = asyncHandler(async (req, res) => {
-    const q = queueQuerySchema.parse(req.query);
+    const q = parseQuery(queueQuerySchema, req.query);
 
     const result = await listPendingMedia({ limit: q.limit, cursor: q.cursor });
 
@@ -23,12 +25,10 @@ export const getQueue = asyncHandler(async (req, res) => {
 
 export const approve = asyncHandler(async (req, res) => {
     const { id } = req.params;
-    const body = moderationActionSchema.parse(req.body);
+    const body = parseBody(moderationActionSchema, req.body);
 
     if (!req.currentUser) {
-        return res.status(500).json({
-            error: { code: 'INTERNAL', message: 'currentUser not loaded' },
-        });
+        throw apiError(500, 'INTERNAL_SERVER_ERROR', 'currentUser not loaded');
     }
 
     const updated = await approveMedia({
@@ -47,12 +47,10 @@ export const approve = asyncHandler(async (req, res) => {
 
 export const reject = asyncHandler(async (req, res) => {
     const { id } = req.params;
-    const body = moderationActionSchema.parse(req.body);
+    const body = parseBody(moderationActionSchema, req.body);
 
     if (!req.currentUser) {
-        return res.status(500).json({
-            error: { code: 'INTERNAL', message: 'currentUser not loaded' },
-        });
+        throw apiError(500, 'INTERNAL_SERVER_ERROR', 'currentUser not loaded');
     }
 
     const updated = await rejectMedia({

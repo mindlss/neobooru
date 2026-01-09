@@ -5,6 +5,7 @@ import {
     listMediaVisible,
 } from '../../domain/media/mediaRead.service';
 import { toMediaDTO } from '../dto';
+import { parseQuery } from '../utils/parse';
 
 export const getMedia = asyncHandler(async (req, res) => {
     const { id } = req.params;
@@ -18,7 +19,7 @@ export const getMedia = asyncHandler(async (req, res) => {
 });
 
 export const listMedia = asyncHandler(async (req, res) => {
-    const q = mediaListQuerySchema.parse(req.query);
+    const q = parseQuery(mediaListQuerySchema, req.query);
 
     const result = await listMediaVisible({
         viewer: req.viewer,

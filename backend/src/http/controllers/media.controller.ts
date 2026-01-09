@@ -4,34 +4,28 @@ import {
     uploadMediaFromTemp,
 } from '../../domain/media/upload.service';
 import { toMediaUploadDTO } from '../dto';
+import { apiError } from '../errors/ApiError';
 
 export const uploadMedia = asyncHandler(async (req, res) => {
     if (!req.user?.id) {
-        return res.status(401).json({ error: { code: 'UNAUTHORIZED' } });
+        throw apiError(401, 'UNAUTHORIZED', 'Missing auth');
     }
 
-    let parsed;
+    let parsed: any;
     try {
         parsed = await parseMultipartToTemp(req);
     } catch (e: any) {
         const msg = e?.message;
 
         if (msg === 'NO_FILE') {
-            return res.status(400).json({
-                error: { code: 'NO_FILE', message: 'file is required' },
-            });
+            throw apiError(400, 'NO_FILE', 'file is required');
         }
 
         if (msg === 'FILE_TOO_LARGE') {
-            return res.status(413).json({ error: { code: 'FILE_TOO_LARGE' } });
+            throw apiError(413, 'FILE_TOO_LARGE', 'File too large');
         }
 
-        return res.status(400).json({
-            error: {
-                code: 'BAD_MULTIPART',
-                message: 'invalid multipart upload',
-            },
-        });
+        throw apiError(400, 'BAD_MULTIPART', 'invalid multipart upload');
     }
 
     try {
@@ -50,29 +44,22 @@ export const uploadMedia = asyncHandler(async (req, res) => {
         const msg = e?.message;
 
         if (msg === 'BLOCKED_HASH') {
-            return res.status(403).json({
-                error: {
-                    code: 'BLOCKED_HASH',
-                    message: 'file hash is blocked',
-                },
-            });
+            throw apiError(403, 'BLOCKED_HASH', 'file hash is blocked');
         }
 
         if (msg === 'DUPLICATE_HASH') {
-            return res.status(409).json({
-                error: {
-                    code: 'DUPLICATE_HASH',
-                    message: 'file already exists',
-                },
-            });
+            throw apiError(409, 'DUPLICATE_HASH', 'file already exists');
         }
 
         if (msg === 'UNSUPPORTED_MEDIA_TYPE') {
-            return res
-                .status(415)
-                .json({ error: { code: 'UNSUPPORTED_MEDIA_TYPE' } });
+            throw apiError(
+                415,
+                'UNSUPPORTED_MEDIA_TYPE',
+                'unsupported media type'
+            );
         }
 
-        return res.status(500).json({ error: { code: 'INTERNAL' } });
+        // Unknown upload error
+        throw apiError(500, 'INTERNAL_SERVER_ERROR', 'Something went wrong');
     }
 });
