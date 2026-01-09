@@ -4,7 +4,6 @@ import {
     getMediaByIdVisible,
     listMediaVisible,
 } from '../../domain/media/mediaRead.service';
-
 import { toMediaDTO } from '../dto';
 
 export const getMedia = asyncHandler(async (req, res) => {

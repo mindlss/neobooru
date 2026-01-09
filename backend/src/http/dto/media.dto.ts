@@ -18,7 +18,6 @@ export type MediaPublicDTO = {
     createdAt: string;
 
     previewUrl: string | null;
-
     tags: TagPublicDTO[];
 };
 
@@ -60,7 +59,6 @@ export function toMediaDTO(
         createdAt: new Date(media.createdAt).toISOString(),
 
         previewUrl: media.previewUrl ?? null,
-
         tags: (media.tags ?? []).map((t: any) =>
             toTagPublicDTO({
                 id: t.id,
@@ -103,4 +101,24 @@ export function toMediaDTO(
     }
 
     return userDto;
+}
+
+export type MediaUploadDTO = {
+    id: string;
+    type: 'IMAGE' | 'VIDEO';
+    contentType: string;
+    size: number;
+    moderationStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
+    createdAt: string;
+};
+
+export function toMediaUploadDTO(m: any): MediaUploadDTO {
+    return {
+        id: m.id,
+        type: m.type,
+        contentType: m.contentType,
+        size: m.size,
+        moderationStatus: m.moderationStatus,
+        createdAt: new Date(m.createdAt).toISOString(),
+    };
 }

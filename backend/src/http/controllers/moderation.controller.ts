@@ -8,16 +8,17 @@ import {
     listPendingMedia,
     rejectMedia,
 } from '../../domain/moderation/moderation.service';
+import { toModerationQueueItemDTO } from '../dto';
 
 export const getQueue = asyncHandler(async (req, res) => {
     const q = queueQuerySchema.parse(req.query);
 
-    const result = await listPendingMedia({
-        limit: q.limit,
-        cursor: q.cursor,
-    });
+    const result = await listPendingMedia({ limit: q.limit, cursor: q.cursor });
 
-    res.json(result);
+    res.json({
+        data: result.data.map(toModerationQueueItemDTO),
+        nextCursor: result.nextCursor ?? null,
+    });
 });
 
 export const approve = asyncHandler(async (req, res) => {

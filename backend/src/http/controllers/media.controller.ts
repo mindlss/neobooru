@@ -3,6 +3,7 @@ import {
     parseMultipartToTemp,
     uploadMediaFromTemp,
 } from '../../domain/media/upload.service';
+import { toMediaUploadDTO } from '../dto';
 
 export const uploadMedia = asyncHandler(async (req, res) => {
     if (!req.user?.id) {
@@ -15,12 +16,15 @@ export const uploadMedia = asyncHandler(async (req, res) => {
     } catch (e: any) {
         const msg = e?.message;
 
-        if (msg === 'NO_FILE')
+        if (msg === 'NO_FILE') {
             return res.status(400).json({
                 error: { code: 'NO_FILE', message: 'file is required' },
             });
-        if (msg === 'FILE_TOO_LARGE')
+        }
+
+        if (msg === 'FILE_TOO_LARGE') {
             return res.status(413).json({ error: { code: 'FILE_TOO_LARGE' } });
+        }
 
         return res.status(400).json({
             error: {
@@ -39,16 +43,7 @@ export const uploadMedia = asyncHandler(async (req, res) => {
             uploadedById: req.user.id,
         });
 
-        return res.status(201).json({
-            id: media.id,
-            hash: media.hash,
-            type: media.type,
-            contentType: media.contentType,
-            size: media.size,
-            originalKey: media.originalKey,
-            moderationStatus: media.moderationStatus,
-            createdAt: media.createdAt,
-        });
+        return res.status(201).json(toMediaUploadDTO(media));
     } catch (e: any) {
         const msg = e?.message;
 
