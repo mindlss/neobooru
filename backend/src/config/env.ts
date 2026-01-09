@@ -21,6 +21,13 @@ const EnvSchema = z.object({
     JWT_SECRET: z.string().min(32),
     JWT_EXPIRES_IN: z.coerce.number().int().positive().default(900),
     MAX_UPLOAD_BYTES: z.coerce.number().int().positive().default(104857600),
+    SEED_ADMIN_EMAIL: z.string().default('admin@local'),
+    SEED_ADMIN_USERNAME: z.string().default('admin'),
+    SEED_ADMIN_PASSWORD: z.string().default('admin12345'),
+
+    SEED_TRUSTED_EMAIL: z.string().default('trusted@local'),
+    SEED_TRUSTED_USERNAME: z.string().default('trusted'),
+    SEED_TRUSTED_PASSWORD: z.string().default('trusted12345'),
 });
 
 const parsed = EnvSchema.safeParse(process.env);
