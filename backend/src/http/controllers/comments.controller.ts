@@ -15,6 +15,10 @@ import {
 import { toCommentDTO } from '../dto';
 
 export const listComments = asyncHandler(async (req, res) => {
+    if (!req.viewer?.isAdult) {
+        return res.json({ data: [], nextCursor: null });
+    }
+
     const params = parseParams(mediaIdParamsSchema, req.params);
     const q = parseQuery(commentsListQuerySchema, req.query);
 
@@ -45,6 +49,10 @@ export const createMediaComment = asyncHandler(async (req, res) => {
             'INTERNAL_SERVER_ERROR',
             'currentUser/viewer not loaded'
         );
+    }
+
+    if (!req.viewer.isAdult) {
+        throw apiError(403, 'COMMENT_UNDERAGE', 'Comments are 18+');
     }
 
     const params = parseParams(mediaIdParamsSchema, req.params);

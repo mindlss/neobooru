@@ -1,13 +1,8 @@
 import 'dotenv/config';
 import { z } from 'zod';
 
-const LogIntervalSchema = z
-    .string()
-    .regex(/^\d+(d|h|m|s|M)$/);
-
-const LogSizeSchema = z
-    .string()
-    .regex(/^\d+(B|K|M|G)$/);
+const LogIntervalSchema = z.string().regex(/^\d+(d|h|m|s|M)$/);
+const LogSizeSchema = z.string().regex(/^\d+(B|K|M|G)$/);
 
 const EnvSchema = z.object({
     NODE_ENV: z
@@ -45,6 +40,14 @@ const EnvSchema = z.object({
     JWT_EXPIRES_IN: z.coerce.number().int().positive().default(900),
 
     MAX_UPLOAD_BYTES: z.coerce.number().int().positive().default(104857600),
+
+    // ===== Avatars =====
+    AVATAR_TARGET_SIZE: z.coerce.number().int().positive().default(512),
+    AVATAR_MAX_BYTES: z.coerce
+        .number()
+        .int()
+        .positive()
+        .default(5 * 1024 * 1024),
 
     SEED_ADMIN_EMAIL: z.string().default('admin@local'),
     SEED_ADMIN_USERNAME: z.string().default('admin'),

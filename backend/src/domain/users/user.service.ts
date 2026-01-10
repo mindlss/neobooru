@@ -19,6 +19,10 @@ async function presign(key: string) {
     );
 }
 
+function canSeeAvatar(viewer: Viewer) {
+    return !!viewer?.isAdult;
+}
+
 export async function getUserPublicById(params: {
     userId: string;
     viewer: Viewer;
@@ -39,10 +43,12 @@ export async function getUserPublicById(params: {
 
     if (!user) return null;
 
-    // Only moderators/admins can see deleted users
     if (user.deletedAt && !isModerator(params.viewer)) return null;
 
-    const avatarUrl = user.avatarKey ? await presign(user.avatarKey) : null;
+    const avatarUrl =
+        user.avatarKey && canSeeAvatar(params.viewer)
+            ? await presign(user.avatarKey)
+            : null;
 
     return { ...user, avatarUrl };
 }
@@ -80,7 +86,21 @@ export async function getUserSelf(userId: string) {
 
     if (!user || user.deletedAt) return null;
 
-    const avatarUrl = user.avatarKey ? await presign(user.avatarKey) : null;
+    const isAdult =
+        user.birthDate != null
+            ? (() => {
+                  const now = new Date();
+                  const eighteenYearsAgo = new Date(
+                      now.getFullYear() - 18,
+                      now.getMonth(),
+                      now.getDate()
+                  );
+                  return user.birthDate <= eighteenYearsAgo;
+              })()
+            : false;
+
+    const avatarUrl =
+        user.avatarKey && isAdult ? await presign(user.avatarKey) : null;
 
     return { ...user, avatarUrl };
 }
@@ -88,10 +108,8 @@ export async function getUserSelf(userId: string) {
 export async function patchUserSelf(params: {
     userId: string;
     input: {
-        avatarKey?: string | null;
         bio?: string | null;
         website?: string | null;
-        birthDate?: Date | null;
 
         showComments?: boolean;
         showRatings?: boolean;
@@ -102,17 +120,11 @@ export async function patchUserSelf(params: {
     const updated = await prisma.user.update({
         where: { id: params.userId },
         data: {
-            ...(params.input.avatarKey !== undefined
-                ? { avatarKey: params.input.avatarKey }
-                : {}),
             ...(params.input.bio !== undefined
                 ? { bio: params.input.bio }
                 : {}),
             ...(params.input.website !== undefined
                 ? { website: params.input.website }
-                : {}),
-            ...(params.input.birthDate !== undefined
-                ? { birthDate: params.input.birthDate }
                 : {}),
 
             ...(params.input.showComments !== undefined
@@ -156,9 +168,21 @@ export async function patchUserSelf(params: {
         },
     });
 
-    const avatarUrl = updated.avatarKey
-        ? await presign(updated.avatarKey)
-        : null;
+    const isAdult =
+        updated.birthDate != null
+            ? (() => {
+                  const now = new Date();
+                  const eighteenYearsAgo = new Date(
+                      now.getFullYear() - 18,
+                      now.getMonth(),
+                      now.getDate()
+                  );
+                  return updated.birthDate <= eighteenYearsAgo;
+              })()
+            : false;
+
+    const avatarUrl =
+        updated.avatarKey && isAdult ? await presign(updated.avatarKey) : null;
 
     return { ...updated, avatarUrl };
 }

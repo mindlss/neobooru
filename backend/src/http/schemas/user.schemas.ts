@@ -5,10 +5,10 @@ export const userIdParamsSchema = z.object({
 });
 
 export const userPatchSelfSchema = z.object({
-    avatarKey: z.string().min(1).max(500).nullable().optional(),
+    // TODO: Birth-date update thru moderator
+
     bio: z.string().max(1000).nullable().optional(),
     website: z.string().url().max(300).nullable().optional(),
-    birthDate: z.coerce.date().nullable().optional(),
 
     showComments: z.boolean().optional(),
     showRatings: z.boolean().optional(),

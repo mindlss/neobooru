@@ -12,6 +12,11 @@ import {
 } from '../../domain/users/user.service';
 import { toUserPublicDTO, toUserSelfDTO } from '../dto';
 
+import {
+    parseAvatarMultipartToTemp,
+    uploadUserAvatarFromTemp,
+} from '../../domain/users/avatar.service';
+
 export const getUserPublic = asyncHandler(async (req, res) => {
     const params = parseParams(userIdParamsSchema, req.params);
 
@@ -48,4 +53,46 @@ export const patchMe = asyncHandler(async (req, res) => {
     });
 
     res.json(toUserSelfDTO(updated));
+});
+
+export const uploadMyAvatar = asyncHandler(async (req, res) => {
+    if (!req.currentUser) {
+        throw apiError(500, 'INTERNAL_SERVER_ERROR', 'currentUser not loaded');
+    }
+
+    let parsed: { tmpPath: string; sha256: string; size: number };
+    try {
+        parsed = await parseAvatarMultipartToTemp(req);
+    } catch (e: any) {
+        const msg = e?.message;
+        if (msg === 'NO_FILE') {
+            throw apiError(400, 'NO_FILE', 'avatar file is required');
+        }
+        if (msg === 'FILE_TOO_LARGE') {
+            throw apiError(413, 'FILE_TOO_LARGE', 'avatar too large');
+        }
+        throw apiError(400, 'BAD_MULTIPART', 'invalid multipart upload');
+    }
+
+    try {
+        await uploadUserAvatarFromTemp({
+            userId: req.currentUser.id,
+            tmpPath: parsed.tmpPath,
+            sha256: parsed.sha256,
+        });
+    } catch (e: any) {
+        if (e?.message === 'UNSUPPORTED_AVATAR_TYPE') {
+            throw apiError(
+                415,
+                'UNSUPPORTED_AVATAR_TYPE',
+                'Allowed: jpeg/png/webp'
+            );
+        }
+        throw e;
+    }
+
+    const me = await getUserSelf(req.currentUser.id);
+    if (!me) throw apiError(401, 'UNAUTHORIZED', 'User not found');
+
+    res.json(toUserSelfDTO(me));
 });
