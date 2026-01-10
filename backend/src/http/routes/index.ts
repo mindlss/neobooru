@@ -9,6 +9,7 @@ import { moderationRouter } from './moderation.route';
 import { taggingRouter } from './tagging.route';
 import { userRouter } from './user.route';
 import { commentsRouter } from './comments.route';
+import { reportsRouter } from './reports.route';
 
 export const apiRouter = Router();
 
@@ -22,3 +23,4 @@ apiRouter.use(moderationRouter);
 apiRouter.use(taggingRouter);
 apiRouter.use(userRouter);
 apiRouter.use(commentsRouter);
+apiRouter.use(reportsRouter);

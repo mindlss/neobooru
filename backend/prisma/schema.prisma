@@ -395,9 +395,16 @@ model Report {
   assignedToId String?
   resolvedById String?
 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   reportedBy User  @relation("UserReports", fields: [reportedById], references: [id])
   assignedTo User? @relation("ReportsAssignedTo", fields: [assignedToId], references: [id])
   resolvedBy User? @relation("ReportResolvedBy", fields: [resolvedById], references: [id])
+
+  @@index([type, targetId, createdAt])
+  @@index([status, createdAt])
+  @@index([reportedById, createdAt])
 }
 
 // ==================== MODERATION LOGS ====================
