@@ -13,6 +13,11 @@ const EnvSchema = z.object({
         .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
         .default('info'),
 
+    // ===== Jobs =====
+    JOBS_ENABLED: z.enum(['true', 'false']).default('true'),
+    JOBS_TICK_MS: z.coerce.number().int().positive().default(10_000),
+    JOBS_RUN_ON_START: z.enum(['true', 'false']).default('true'),
+
     // ===== Logging =====
     LOG_DIR: z.string().default('./logs'),
     LOG_TO_FILE: z.enum(['true', 'false']).default('true'),

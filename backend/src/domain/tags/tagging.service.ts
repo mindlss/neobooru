@@ -63,14 +63,53 @@ async function getOrCreateTags(names: string[]) {
 }
 
 async function recomputeMediaExplicit(tx: Tx, mediaId: string) {
+    const before = await tx.media.findUnique({
+        where: { id: mediaId },
+        select: { isExplicit: true },
+    });
+    if (!before) throw new Error('NOT_FOUND');
+
     const cnt = await tx.mediaTags.count({
         where: { mediaId, tag: { isExplicit: true } },
     });
 
+    const nextIsExplicit = cnt > 0;
+
+    if (before.isExplicit === nextIsExplicit) {
+        return;
+    }
+
     await tx.media.update({
         where: { id: mediaId },
-        data: { isExplicit: cnt > 0 },
+        data: { isExplicit: nextIsExplicit },
     });
+
+    const links = await tx.comicPage.findMany({
+        where: { mediaId },
+        select: { comicId: true },
+        distinct: ['comicId'],
+    });
+
+    if (links.length === 0) return;
+
+    if (nextIsExplicit) {
+        await tx.comic.updateMany({
+            where: { id: { in: links.map((l) => l.comicId) } },
+            data: { isExplicit: true },
+        });
+        return;
+    }
+
+    for (const l of links) {
+        const anyExplicit = await tx.comicPage.count({
+            where: { comicId: l.comicId, media: { isExplicit: true } },
+        });
+
+        await tx.comic.update({
+            where: { id: l.comicId },
+            data: { isExplicit: anyExplicit > 0 },
+        });
+    }
 }
 
 export async function addTagsToMedia(mediaId: string, tagNames: string[]) {

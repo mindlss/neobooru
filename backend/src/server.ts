@@ -3,11 +3,13 @@ import { env } from './config/env';
 import { logger } from './config/logger';
 import { prisma } from './lib/prisma';
 import { ensureBucket } from './lib/minio';
+import { startJobsRunner, stopJobsRunner } from './jobs/runner';
 
 const app = createApp();
 
 async function start() {
     await ensureBucket();
+    startJobsRunner();
 
     const server = app.listen(env.PORT, () => {
         logger.info({ port: env.PORT, env: env.NODE_ENV }, 'Server started');
@@ -26,6 +28,7 @@ async function start() {
             logger.info('HTTP server closed');
 
             try {
+                stopJobsRunner();
                 await prisma.$disconnect();
                 logger.info('Prisma disconnected');
             } catch (err) {

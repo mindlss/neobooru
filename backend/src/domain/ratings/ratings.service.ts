@@ -26,10 +26,48 @@ function computeAvg(sum: number, count: number) {
     return sum / count;
 }
 
+async function applyRatingDeltaToComics(
+    tx: any,
+    mediaId: string,
+    deltaSum: number,
+    deltaCount: number
+) {
+    if (deltaSum === 0 && deltaCount === 0) return;
+
+    const links = await tx.comicPage.findMany({
+        where: { mediaId },
+        select: { comicId: true },
+        distinct: ['comicId'],
+    });
+
+    if (links.length === 0) return;
+
+    for (const l of links) {
+        const c = await tx.comic.findUnique({
+            where: { id: l.comicId },
+            select: { ratingSum: true, ratingCount: true },
+        });
+        if (!c) continue;
+
+        const newSum = c.ratingSum + deltaSum;
+        const newCount = Math.max(0, c.ratingCount + deltaCount);
+        const newAvg = computeAvg(newSum, newCount);
+
+        await tx.comic.update({
+            where: { id: l.comicId },
+            data: {
+                ratingSum: newSum,
+                ratingCount: newCount,
+                ratingAvg: newAvg,
+            },
+        });
+    }
+}
+
 export async function setRating(input: {
     mediaId: string;
     userId: string;
-    value: number; // validated in http schema
+    value: number;
     viewer: Viewer;
 }) {
     return prisma.$transaction(async (tx) => {
@@ -97,6 +135,10 @@ export async function setRating(input: {
             },
         });
 
+        const deltaSum = newSum - media.ratingSum;
+        const deltaCount = newCount - media.ratingCount;
+        await applyRatingDeltaToComics(tx, input.mediaId, deltaSum, deltaCount);
+
         return {
             mediaId: updated.id,
             ratingAvg: updated.ratingAvg,
@@ -162,6 +204,10 @@ export async function removeRating(input: {
                 ratingAvg: true,
             },
         });
+
+        const deltaSum = newSum - media.ratingSum;
+        const deltaCount = newCount - media.ratingCount;
+        await applyRatingDeltaToComics(tx, input.mediaId, deltaSum, deltaCount);
 
         return {
             mediaId: updated.id,

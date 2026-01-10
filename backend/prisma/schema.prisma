@@ -51,6 +51,12 @@ enum CommentDeletedKind {
   MODERATOR
 }
 
+enum ComicStatus {
+  WIP
+  FINISHED
+  DEAD
+}
+
 // ==================== USERS ====================
 
 model User {
@@ -83,6 +89,7 @@ model User {
   comments    Comment[]
   ratings     Rating[]
   media       Media[]       @relation("UserUploads")
+  comics      Comic[]       @relation("UserComics")
   favorites Favorite[]
   viewHistory ViewHistory[]
 
@@ -203,6 +210,8 @@ model Media {
   height   Int?
   duration Int?
 
+  isComicPage Boolean @default(false)
+
   description String?
   type        MediaType
   createdAt   DateTime  @default(now())
@@ -235,8 +244,12 @@ model Media {
   favorites Favorite[]
   viewHistory ViewHistory[]
 
+  coverForComics    Comic[] @relation("ComicCover")
+  lastPageForComics Comic[] @relation("ComicLastPage")
+
   @@index([randomKey])
   @@index([commentCount])
+  @@index([isComicPage])
 
   // Для сортировок:
   @@index([ratingAvg])
@@ -260,12 +273,40 @@ model MediaTags {
 // ==================== COMICS ====================
 
 model Comic {
-  id        String   @id @default(uuid())
+  id        String      @id @default(uuid())
   title     String
+  status    ComicStatus @default(WIP)
+
+  createdById String
+  createdBy   User @relation("UserComics", fields: [createdById], references: [id])
+
+  coverMediaId String?
+  coverMedia   Media? @relation("ComicCover", fields: [coverMediaId], references: [id], onDelete: SetNull)
+
+  lastPageAddedAt DateTime?
+  lastPageMediaId String?
+  lastPageMedia   Media? @relation("ComicLastPage", fields: [lastPageMediaId], references: [id], onDelete: SetNull)
+
+  randomKey  Float   @default(dbgenerated("random()")) @db.DoublePrecision
+  isExplicit Boolean @default(false)
+
+  // rating aggregates (weighted by votes via pages' Media.rating*)
+  ratingCount Int   @default(0)
+  ratingSum   Int   @default(0)
+  ratingAvg   Float @default(0) @db.DoublePrecision
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  pages ComicPage[]
+  pages    ComicPage[]
+  tagLinks ComicTags[]
+
+  @@index([createdById])
+  @@index([randomKey])
+  @@index([lastPageAddedAt])
+  @@index([isExplicit])
+  @@index([ratingAvg])
+  @@index([ratingCount])
 }
 
 model ComicPage {
@@ -273,11 +314,26 @@ model ComicPage {
   comicId  String
   mediaId  String
   position Int
+  addedAt  DateTime @default(now())
 
   comic Comic @relation(fields: [comicId], references: [id], onDelete: Cascade)
   media Media @relation(fields: [mediaId], references: [id], onDelete: Cascade)
 
   @@unique([comicId, position])
+  @@unique([comicId, mediaId])
+  @@index([mediaId])
+}
+
+model ComicTags {
+  comicId String
+  tagId   String
+  addedAt DateTime @default(now())
+
+  comic Comic @relation(fields: [comicId], references: [id], onDelete: Cascade)
+  tag   Tag   @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([comicId, tagId])
+  @@index([tagId, comicId])
 }
 
 // ==================== TAGS ====================
@@ -303,6 +359,8 @@ model Tag {
   mediaLinks MediaTags[]
   aliases    TagAlias[]
   history    TagHistory[]
+
+  comicLinks ComicTags[]
 
   @@index([name])
   @@index([usageCount])

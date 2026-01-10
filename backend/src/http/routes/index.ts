@@ -10,6 +10,8 @@ import { taggingRouter } from './tagging.route';
 import { userRouter } from './user.route';
 import { commentsRouter } from './comments.route';
 import { reportsRouter } from './reports.route';
+import { jobsRouter } from './jobs.route';
+import { comicsRouter } from './comics.route';
 
 export const apiRouter = Router();
 
@@ -24,3 +26,5 @@ apiRouter.use(taggingRouter);
 apiRouter.use(userRouter);
 apiRouter.use(commentsRouter);
 apiRouter.use(reportsRouter);
+apiRouter.use(jobsRouter);
+apiRouter.use(comicsRouter);
