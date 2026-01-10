@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
 import { logger } from '../../config/logger';
-import { ApiError, isApiError } from '../errors/ApiError';
+import { isApiError } from '../errors/ApiError';
 import {
     isJwtError,
     isNotBeforeError,
@@ -43,8 +43,21 @@ export function errorMiddleware(
 ) {
     const requestId = getRequestId(req);
 
-    // 1) Our explicit API errors
+    // 1) Explicit API errors
     if (isApiError(err)) {
+        const level = err.status >= 500 ? 'error' : 'warn';
+        logger[level](
+            {
+                requestId,
+                code: err.code,
+                status: err.status,
+                details: err.details,
+                path: req.path,
+                method: req.method,
+            },
+            err.message || err.code
+        );
+
         return sendError(res, err.status, {
             code: err.code,
             message: err.message,
@@ -55,6 +68,17 @@ export function errorMiddleware(
 
     // 2) Zod validation (query/body/params)
     if (err instanceof ZodError) {
+        logger.warn(
+            {
+                requestId,
+                code: 'VALIDATION_ERROR',
+                issues: err.issues,
+                path: req.path,
+                method: req.method,
+            },
+            'Invalid request'
+        );
+
         return sendError(res, 400, {
             code: 'VALIDATION_ERROR',
             message: 'Invalid request',
@@ -64,14 +88,22 @@ export function errorMiddleware(
     }
 
     // 3) Invalid JSON body (express.json)
-    // Express throws SyntaxError with "body" attached in many cases
     if (err instanceof SyntaxError) {
-        // best-effort detection of JSON parse error
         const anyErr = err as any;
         if (
             anyErr.type === 'entity.parse.failed' ||
             /JSON/i.test(err.message)
         ) {
+            logger.warn(
+                {
+                    requestId,
+                    code: 'INVALID_JSON',
+                    path: req.path,
+                    method: req.method,
+                },
+                'Malformed JSON body'
+            );
+
             return sendError(res, 400, {
                 code: 'INVALID_JSON',
                 message: 'Malformed JSON body',
@@ -105,11 +137,6 @@ export function errorMiddleware(
 
     // 5) Prisma errors
     if (isPrismaKnownError(err)) {
-        // Common mappings:
-        // P2002 unique constraint failed
-        // P2025 record not found
-        // P2003 foreign key constraint failed
-        // P2014 relation violation
         switch (err.code) {
             case 'P2002': {
                 return sendError(res, 409, {
@@ -156,7 +183,15 @@ export function errorMiddleware(
     }
 
     // 6) Fallback: 500
-    logger.error({ err, requestId }, 'Unhandled error');
+    logger.error(
+        {
+            err,
+            requestId,
+            path: req.path,
+            method: req.method,
+        },
+        'Unhandled error'
+    );
 
     return sendError(res, 500, {
         code: 'INTERNAL_SERVER_ERROR',

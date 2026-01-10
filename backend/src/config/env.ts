@@ -1,6 +1,14 @@
 import 'dotenv/config';
 import { z } from 'zod';
 
+const LogIntervalSchema = z
+    .string()
+    .regex(/^\d+(d|h|m|s|M)$/);
+
+const LogSizeSchema = z
+    .string()
+    .regex(/^\d+(B|K|M|G)$/);
+
 const EnvSchema = z.object({
     NODE_ENV: z
         .enum(['development', 'test', 'production'])
@@ -9,6 +17,19 @@ const EnvSchema = z.object({
     LOG_LEVEL: z
         .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
         .default('info'),
+
+    // ===== Logging =====
+    LOG_DIR: z.string().default('./logs'),
+    LOG_TO_FILE: z.enum(['true', 'false']).default('true'),
+
+    // split files
+    LOG_APP_FILE_BASENAME: z.string().default('app.log'),
+    LOG_ACCESS_FILE_BASENAME: z.string().default('access.log'),
+    LOG_ERROR_FILE_BASENAME: z.string().default('error.log'),
+
+    LOG_ROTATE_INTERVAL: LogIntervalSchema.default('1d'),
+    LOG_ROTATE_SIZE: LogSizeSchema.default('50M'),
+    LOG_MAX_FILES: z.coerce.number().int().positive().default(14),
 
     DATABASE_URL: z.string().min(1),
 

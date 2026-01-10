@@ -13,16 +13,34 @@ async function start() {
         logger.info({ port: env.PORT, env: env.NODE_ENV }, 'Server started');
     });
 
+    let shuttingDown = false;
+
     async function shutdown(signal: string) {
+        if (shuttingDown) return;
+        shuttingDown = true;
+
         logger.info({ signal }, 'Shutting down...');
+
+        // Stop accepting new connections
         server.close(async () => {
+            logger.info('HTTP server closed');
+
             try {
                 await prisma.$disconnect();
                 logger.info('Prisma disconnected');
+            } catch (err) {
+                logger.error({ err }, 'Failed to disconnect Prisma');
             } finally {
-                process.exit(0);
+                // Give streams a moment to flush
+                setTimeout(() => process.exit(0), 50).unref();
             }
         });
+
+        // Hard exit fallback
+        setTimeout(() => {
+            logger.error({ signal }, 'Forced shutdown');
+            process.exit(1);
+        }, 10_000).unref();
     }
 
     process.on('SIGINT', () => void shutdown('SIGINT'));
