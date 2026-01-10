@@ -1,7 +1,8 @@
 import { prisma } from '../../lib/prisma';
-import type { UserRole } from '@prisma/client';
+import type { UserRole, Prisma } from '@prisma/client';
 
 type Viewer = { id?: string; role: UserRole; isAdult: boolean } | undefined;
+type Tx = Prisma.TransactionClient;
 
 function normalizeTagName(name: string) {
     return name.trim().toLowerCase().replace(/\s+/g, '_');
@@ -61,6 +62,17 @@ async function getOrCreateTags(names: string[]) {
     return resolved.map((n) => existingMap.get(n)!);
 }
 
+async function recomputeMediaExplicit(tx: Tx, mediaId: string) {
+    const cnt = await tx.mediaTags.count({
+        where: { mediaId, tag: { isExplicit: true } },
+    });
+
+    await tx.media.update({
+        where: { id: mediaId },
+        data: { isExplicit: cnt > 0 },
+    });
+}
+
 export async function addTagsToMedia(mediaId: string, tagNames: string[]) {
     const tags = await getOrCreateTags(tagNames);
 
@@ -92,6 +104,8 @@ export async function addTagsToMedia(mediaId: string, tagNames: string[]) {
                 data: { usageCount: { increment: 1 } },
             });
         }
+
+        await recomputeMediaExplicit(tx, mediaId);
     });
 
     return { ok: true };
@@ -125,6 +139,8 @@ export async function removeTagsFromMedia(mediaId: string, tagNames: string[]) {
             where: { id: { in: existingIds } },
             data: { usageCount: { decrement: 1 } },
         });
+
+        await recomputeMediaExplicit(tx, mediaId);
     });
 
     return { ok: true };
@@ -169,6 +185,8 @@ export async function setTagsForMedia(mediaId: string, tagNames: string[]) {
                 data: { usageCount: { decrement: 1 } },
             });
         }
+
+        await recomputeMediaExplicit(tx, mediaId);
     });
 
     return { ok: true };
@@ -333,36 +351,53 @@ export async function patchTag(
     tagId: string,
     input: { customColor?: string | null; isExplicit?: boolean }
 ) {
-    const tag = await prisma.tag.update({
-        where: { id: tagId },
-        data: {
-            ...(input.customColor !== undefined
-                ? { customColor: input.customColor }
-                : {}),
-            ...(input.isExplicit !== undefined
-                ? { isExplicit: input.isExplicit }
-                : {}),
-        },
-        select: {
-            id: true,
-            name: true,
-            usageCount: true,
-            customColor: true,
-            isExplicit: true,
-            category: { select: { id: true, name: true, color: true } },
-        },
-    });
+    return prisma.$transaction(async (tx) => {
+        const tag = await tx.tag.update({
+            where: { id: tagId },
+            data: {
+                ...(input.customColor !== undefined
+                    ? { customColor: input.customColor }
+                    : {}),
+                ...(input.isExplicit !== undefined
+                    ? { isExplicit: input.isExplicit }
+                    : {}),
+            },
+            select: {
+                id: true,
+                name: true,
+                usageCount: true,
+                customColor: true,
+                isExplicit: true,
+                category: { select: { id: true, name: true, color: true } },
+            },
+        });
 
-    return {
-        id: tag.id,
-        name: tag.name,
-        usageCount: tag.usageCount,
-        categoryId: tag.category.id,
-        categoryName: tag.category.name,
-        color: tag.customColor ?? tag.category.color,
-        customColor: tag.customColor ?? null,
-        isExplicit: tag.isExplicit,
-    };
+        if (input.isExplicit !== undefined) {
+            const mediaLinks = await tx.mediaTags.findMany({
+                where: { tagId },
+                select: { mediaId: true },
+            });
+
+            const mediaIds = Array.from(
+                new Set(mediaLinks.map((l) => l.mediaId))
+            );
+
+            for (const mediaId of mediaIds) {
+                await recomputeMediaExplicit(tx, mediaId);
+            }
+        }
+
+        return {
+            id: tag.id,
+            name: tag.name,
+            usageCount: tag.usageCount,
+            categoryId: tag.category.id,
+            categoryName: tag.category.name,
+            color: tag.customColor ?? tag.category.color,
+            customColor: tag.customColor ?? null,
+            isExplicit: tag.isExplicit,
+        };
+    });
 }
 
 export async function createTag(input: { name: string; categoryId: string }) {

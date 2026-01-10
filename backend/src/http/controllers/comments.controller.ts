@@ -16,7 +16,7 @@ import { toCommentDTO } from '../dto';
 
 export const listComments = asyncHandler(async (req, res) => {
     if (!req.viewer?.isAdult) {
-        return res.json({ data: [], nextCursor: null });
+        throw apiError(403, 'COMMENTS_ADULTS_ONLY', 'Comments are 18+');
     }
 
     const params = parseParams(mediaIdParamsSchema, req.params);
@@ -80,6 +80,10 @@ export const createMediaComment = asyncHandler(async (req, res) => {
 });
 
 export const deleteCommentById = asyncHandler(async (req, res) => {
+    if (!req.viewer?.isAdult) {
+        throw apiError(403, 'COMMENTS_ADULTS_ONLY', 'Comments are 18+');
+    }
+
     const id = String(req.params.id || '');
 
     if (!req.currentUser) {
