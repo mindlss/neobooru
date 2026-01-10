@@ -8,6 +8,7 @@ import { RestrictionType, UserRole } from '@prisma/client';
 import {
     adminList,
     adminPatch,
+    adminTargets,
     create,
 } from '../controllers/reports.controller';
 
@@ -26,13 +27,22 @@ reportsRouter.post(
     create
 );
 
-// Admin: list reports
+// Admin: list reports (default unresolved, oldest -> newest)
 reportsRouter.get(
     '/admin/reports',
     authMiddleware,
     currentUserMiddleware,
     requireRole(UserRole.MODERATOR, UserRole.ADMIN),
     adminList
+);
+
+// Admin: group by targets (default unresolved, most reports -> least)
+reportsRouter.get(
+    '/admin/reports/targets',
+    authMiddleware,
+    currentUserMiddleware,
+    requireRole(UserRole.MODERATOR, UserRole.ADMIN),
+    adminTargets
 );
 
 // Admin: update report status/assignment

@@ -1,25 +1,3 @@
-export type ReportCreatedDTO = {
-    id: string;
-    type: string;
-    targetId: string;
-    reason: string;
-    description: string | null;
-    status: string;
-    createdAt: string;
-};
-
-export function toReportCreatedDTO(r: any): ReportCreatedDTO {
-    return {
-        id: r.id,
-        type: r.type,
-        targetId: r.targetId,
-        reason: r.reason,
-        description: r.description ?? null,
-        status: r.status,
-        createdAt: new Date(r.createdAt).toISOString(),
-    };
-}
-
 export type AdminReportDTO = {
     id: string;
     type: string;
@@ -61,5 +39,23 @@ export function toAdminReportDTO(r: any): AdminReportDTO {
 
         resolvedById: r.resolvedById ?? null,
         resolvedByUsername: r.resolvedBy?.username ?? null,
+    };
+}
+
+export type AdminReportTargetDTO = {
+    type: string;
+    targetId: string;
+    reportCount: number;
+    firstReportedAt: string;
+    lastReportedAt: string;
+};
+
+export function toAdminReportTargetDTO(r: any): AdminReportTargetDTO {
+    return {
+        type: r.type,
+        targetId: r.targetId,
+        reportCount: r.reportCount,
+        firstReportedAt: new Date(r.firstReportedAt).toISOString(),
+        lastReportedAt: new Date(r.lastReportedAt).toISOString(),
     };
 }

@@ -3,14 +3,16 @@ import { parseBody, parseQuery } from '../utils/parse';
 import {
     adminReportPatchSchema,
     adminReportsListQuerySchema,
+    adminReportTargetsQuerySchema,
     createReportSchema,
 } from '../schemas/reports.schemas';
 import {
     createReport,
     listReportsAdmin,
+    listReportTargetsAdmin,
     setReportStatusAdmin,
 } from '../../domain/reports/reports.service';
-import { toAdminReportDTO, toReportCreatedDTO } from '../dto';
+import { toAdminReportDTO, toAdminReportTargetDTO } from '../dto';
 import { apiError } from '../errors/ApiError';
 
 export const create = asyncHandler(async (req, res) => {
@@ -20,7 +22,7 @@ export const create = asyncHandler(async (req, res) => {
 
     const body = parseBody(createReportSchema, req.body);
 
-    const report = await createReport({
+    await createReport({
         type: body.type,
         targetId: body.targetId,
         reason: body.reason,
@@ -28,7 +30,7 @@ export const create = asyncHandler(async (req, res) => {
         reportedById: req.currentUser.id,
     });
 
-    res.status(201).json(toReportCreatedDTO(report));
+    res.status(201).json({ status: 'ok' });
 });
 
 export const adminList = asyncHandler(async (req, res) => {
@@ -39,11 +41,32 @@ export const adminList = asyncHandler(async (req, res) => {
         cursor: q.cursor,
         status: q.status,
         type: q.type,
+        order: q.order ?? 'old',
     });
 
     res.json({
         data: result.data.map(toAdminReportDTO),
         nextCursor: result.nextCursor,
+    });
+});
+
+export const adminTargets = asyncHandler(async (req, res) => {
+    const q = parseQuery(adminReportTargetsQuerySchema, req.query);
+
+    const result = await listReportTargetsAdmin({
+        limit: q.limit,
+        page: q.page,
+        type: q.type,
+        status: q.status as any,
+        order: q.order ?? 'count_desc',
+    });
+
+    res.json({
+        data: result.data.map(toAdminReportTargetDTO),
+        page: result.page,
+        limit: result.limit,
+        totalTargets: result.totalTargets,
+        totalPages: result.totalPages,
     });
 });
 
