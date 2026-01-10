@@ -10,11 +10,22 @@ import { requireNotBanned } from '../middlewares/requireNotBanned.middleware';
 import { requireRole } from '../middlewares/requireRole.middleware';
 import { requireNoActiveRestriction } from '../middlewares/requireNoActiveRestriction.middleware';
 import { RestrictionType, UserRole } from '@prisma/client';
+import { viewerMiddleware } from '../middlewares/viewer.middleware';
 
 export const mediaRouter = Router();
 
-mediaRouter.get('/media', optionalAuthMiddleware, listMedia);
-mediaRouter.get('/media/:id', optionalAuthMiddleware, getMedia);
+mediaRouter.get(
+    '/media',
+    optionalAuthMiddleware,
+    viewerMiddleware,
+    listMedia
+);
+mediaRouter.get(
+    '/media/:id',
+    optionalAuthMiddleware,
+    viewerMiddleware,
+    getMedia
+);
 
 mediaRouter.post(
     '/media/upload',
