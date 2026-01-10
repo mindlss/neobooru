@@ -5,7 +5,7 @@ import { storageRouter } from './storage.route';
 import { authRouter } from './auth.route';
 import { mediaRouter } from './media.route';
 import { moderationRouter } from './moderation.route';
-import { taggingRouter } from './tagging.route';
+import { taggingRouter } from './tags.route';
 import { userRouter } from './user.route';
 import { commentsRouter } from './comments.route';
 import { reportsRouter } from './reports.route';

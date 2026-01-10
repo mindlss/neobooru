@@ -1,4 +1,4 @@
-import type { ExtractedMetadata } from './metadata.service';
+import type { ExtractedMetadata } from '../media/metadata.service';
 import { MediaType } from '@prisma/client';
 
 export type AutoTagOptions = {

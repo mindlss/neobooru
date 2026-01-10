@@ -6,7 +6,7 @@ import {
     createTagSchema,
     patchTagSchema,
     createAliasSchema,
-} from '../schemas/tagging.schemas';
+} from '../schemas/tag.schemas';
 import {
     addTagsToMedia,
     removeTagsFromMedia,
@@ -18,7 +18,7 @@ import {
     createAlias,
     deleteAlias,
     listAliasesForTag,
-} from '../../domain/tags/tagging.service';
+} from '../../domain/tags/tags.service';
 import { toTagAdminDTO, toTagSuggestDTO, toTagSearchDTO } from '../dto';
 import { parseBody, parseQuery } from '../utils/parse';
 

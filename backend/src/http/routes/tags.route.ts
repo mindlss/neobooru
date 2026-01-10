@@ -15,7 +15,7 @@ import {
     createTagAlias,
     deleteTagAlias,
     listTagAliases,
-} from '../controllers/tagging.controller';
+} from '../controllers/tags.controller';
 
 export const taggingRouter = Router();
 

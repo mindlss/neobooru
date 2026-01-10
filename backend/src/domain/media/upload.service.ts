@@ -15,9 +15,9 @@ import {
     UnsupportedMediaTypeError,
 } from './metadata.service';
 
-import { parseTags } from '../tags/tagParser';
-import { deriveAutoTags } from './autoTags';
-import { setTagsForMedia } from '../tags/tagging.service';
+import { parseTags } from '../tags/tags.parser';
+import { deriveAutoTags } from '../tags/tags.auto';
+import { setTagsForMedia } from '../tags/tags.service';
 
 type ParsedUpload = {
     tmpPath: string;

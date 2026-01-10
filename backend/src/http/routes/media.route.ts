@@ -1,6 +1,5 @@
 import { Router } from 'express';
-import { uploadMedia } from '../controllers/media.controller';
-import { listMedia, getMedia } from '../controllers/mediaRead.controller';
+import { listMedia, getMedia, uploadMedia } from '../controllers/media.controller';
 import { favorite, unfavorite } from '../controllers/favorites.controller';
 import { rateMedia, unrateMedia } from '../controllers/ratings.controller';
 import { authMiddleware } from '../middlewares/auth.middleware';
