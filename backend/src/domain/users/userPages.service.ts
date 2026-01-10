@@ -44,9 +44,16 @@ async function presign(key: string) {
     );
 }
 
-function mapMedia(m: any) {
+function filterTagLinksForViewer(tagLinks: any[], viewer: Viewer) {
+    if (viewer?.isAdult) return tagLinks ?? [];
+    return (tagLinks ?? []).filter((l: any) => !l?.tag?.isExplicit);
+}
+
+function mapMedia(m: any, viewer: Viewer) {
+    const visibleLinks = filterTagLinksForViewer(m.tagLinks ?? [], viewer);
+
     const tags =
-        (m.tagLinks ?? []).map((l: any) => ({
+        (visibleLinks ?? []).map((l: any) => ({
             id: l.tag.id,
             name: l.tag.name,
             usageCount: l.tag.usageCount,
@@ -155,7 +162,7 @@ export async function listUserUploads(params: {
     });
 
     const nextCursor = items.length > take ? items[take].id : null;
-    const data = items.slice(0, take).map(mapMedia);
+    const data = items.slice(0, take).map((m) => mapMedia(m, params.viewer));
 
     const withUrls = await Promise.all(
         data.map(async (m) => ({
@@ -219,7 +226,9 @@ export async function listUserFavorites(params: {
     });
 
     const nextCursor = favorites.length > take ? favorites[take].id : null;
-    const mediaRows = favorites.slice(0, take).map((f) => mapMedia(f.media));
+    const mediaRows = favorites
+        .slice(0, take)
+        .map((f) => mapMedia(f.media, params.viewer));
 
     const withUrls = await Promise.all(
         mediaRows.map(async (m) => ({

@@ -46,9 +46,16 @@ async function presign(key: string) {
     );
 }
 
-function mapMedia(m: any) {
+function filterTagLinksForViewer(tagLinks: any[], viewer: Viewer) {
+    if (viewer?.isAdult) return tagLinks ?? [];
+    return (tagLinks ?? []).filter((l: any) => !l?.tag?.isExplicit);
+}
+
+function mapMedia(m: any, viewer: Viewer) {
+    const visibleLinks = filterTagLinksForViewer(m.tagLinks ?? [], viewer);
+
     const tags =
-        (m.tagLinks ?? []).map((l: any) => ({
+        (visibleLinks ?? []).map((l: any) => ({
             id: l.tag.id,
             name: l.tag.name,
             usageCount: l.tag.usageCount,
@@ -152,7 +159,7 @@ export async function getMediaByIdVisible(id: string, viewer: Viewer) {
 
     if (!media) return null;
 
-    const dto = mapMedia(media);
+    const dto = mapMedia(media, viewer);
 
     const originalUrl = await presign(media.originalKey);
     const previewUrl = media.previewKey
@@ -197,7 +204,7 @@ export async function listMediaVisible(params: {
     });
 
     const nextCursor = items.length > take ? items[take].id : null;
-    const data = items.slice(0, take).map(mapMedia);
+    const data = items.slice(0, take).map((m) => mapMedia(m, params.viewer));
 
     const withUrls = await Promise.all(
         data.map(async (m) => ({

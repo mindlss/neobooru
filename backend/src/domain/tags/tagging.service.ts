@@ -1,7 +1,16 @@
 import { prisma } from '../../lib/prisma';
+import type { UserRole } from '@prisma/client';
+
+type Viewer = { id?: string; role: UserRole; isAdult: boolean } | undefined;
 
 function normalizeTagName(name: string) {
     return name.trim().toLowerCase().replace(/\s+/g, '_');
+}
+
+function tagVisibilityWhere(viewer: Viewer) {
+    // explicit-теги скрываем всем, кто не 18+
+    if (!viewer?.isAdult) return { isExplicit: false };
+    return {};
 }
 
 async function resolveNames(names: string[]) {
@@ -165,25 +174,147 @@ export async function setTagsForMedia(mediaId: string, tagNames: string[]) {
     return { ok: true };
 }
 
-export async function searchTags(q: string, limit: number) {
-    const query = normalizeTagName(q);
+export type TagSuggestRow =
+    | {
+          kind: 'tag';
+          id: string;
+          name: string;
+          usageCount: number;
+          categoryId: string;
+          categoryName: string;
+          color: string;
+          customColor: string | null;
+          canonicalId: string;
+          canonicalName: string;
+      }
+    | {
+          kind: 'alias';
+          id: string;
+          name: string;
+          usageCount: number;
+          categoryId: string;
+          categoryName: string;
+          color: string;
+          customColor: string | null;
+          canonicalId: string;
+          canonicalName: string;
+      };
 
+export async function searchTagsAutocomplete(params: {
+    q: string;
+    limit: number;
+    viewer: Viewer;
+}) {
+    const query = normalizeTagName(params.q);
+    const take = Math.min(Math.max(params.limit, 1), 50);
+
+    // canonical tags
     const tags = await prisma.tag.findMany({
-        where: { name: { startsWith: query } },
+        where: {
+            name: { startsWith: query },
+            ...tagVisibilityWhere(params.viewer),
+        },
         orderBy: [{ usageCount: 'desc' }, { name: 'asc' }],
-        take: limit,
+        take,
         select: {
             id: true,
             name: true,
             usageCount: true,
             customColor: true,
-            category: {
-                select: {
-                    id: true,
-                    name: true,
-                    color: true,
+            category: { select: { id: true, name: true, color: true } },
+        },
+    });
+
+    // aliases
+    const aliases = await prisma.tagAlias.findMany({
+        where: {
+            alias: { startsWith: query },
+            tag: {
+                ...tagVisibilityWhere(params.viewer),
+            },
+        },
+        take: take * 2,
+        include: {
+            tag: {
+                include: {
+                    category: true,
                 },
             },
+        },
+    });
+
+    const out: TagSuggestRow[] = [];
+
+    for (const t of tags) {
+        out.push({
+            kind: 'tag',
+            id: t.id,
+            name: t.name,
+            usageCount: t.usageCount,
+            categoryId: t.category.id,
+            categoryName: t.category.name,
+            color: t.customColor ?? t.category.color,
+            customColor: t.customColor ?? null,
+            canonicalId: t.id,
+            canonicalName: t.name,
+        });
+    }
+
+    for (const a of aliases) {
+        out.push({
+            kind: 'alias',
+            id: a.id,
+            name: a.alias,
+            usageCount: a.tag.usageCount,
+            categoryId: a.tag.category.id,
+            categoryName: a.tag.category.name,
+            color: a.tag.customColor ?? a.tag.category.color,
+            customColor: a.tag.customColor ?? null,
+            canonicalId: a.tag.id,
+            canonicalName: a.tag.name,
+        });
+    }
+
+    // dedupe
+    const seen = new Set<string>();
+    const deduped: TagSuggestRow[] = [];
+    for (const r of out) {
+        const k = `${r.kind}:${r.id}`;
+        if (!seen.has(k)) {
+            seen.add(k);
+            deduped.push(r);
+        }
+    }
+
+    deduped.sort((a, b) => {
+        if (b.usageCount !== a.usageCount) return b.usageCount - a.usageCount;
+        if (a.name < b.name) return -1;
+        if (a.name > b.name) return 1;
+        if (a.kind === b.kind) return 0;
+        return a.kind === 'tag' ? -1 : 1;
+    });
+
+    return deduped.slice(0, take);
+}
+
+export async function listPopularTags(params: {
+    limit: number;
+    viewer: Viewer;
+}) {
+    const take = Math.min(Math.max(params.limit, 1), 200);
+
+    const tags = await prisma.tag.findMany({
+        where: {
+            ...tagVisibilityWhere(params.viewer),
+        },
+        orderBy: [{ usageCount: 'desc' }, { name: 'asc' }],
+        take,
+        select: {
+            id: true,
+            name: true,
+            usageCount: true,
+            customColor: true,
+            category: { select: { id: true, name: true, color: true } },
         },
     });
 
@@ -194,22 +325,13 @@ export async function searchTags(q: string, limit: number) {
         categoryId: t.category.id,
         categoryName: t.category.name,
         color: t.customColor ?? t.category.color,
-        customColor: t.customColor,
+        customColor: t.customColor ?? null,
     }));
-}
-
-export async function createTag(input: { name: string; categoryId: string }) {
-    const name = normalizeTagName(input.name);
-
-    return prisma.tag.create({
-        data: { name, categoryId: input.categoryId },
-        select: { id: true, name: true, usageCount: true, categoryId: true },
-    });
 }
 
 export async function patchTag(
     tagId: string,
-    input: { customColor?: string | null }
+    input: { customColor?: string | null; isExplicit?: boolean }
 ) {
     const tag = await prisma.tag.update({
         where: { id: tagId },
@@ -217,12 +339,16 @@ export async function patchTag(
             ...(input.customColor !== undefined
                 ? { customColor: input.customColor }
                 : {}),
+            ...(input.isExplicit !== undefined
+                ? { isExplicit: input.isExplicit }
+                : {}),
         },
         select: {
             id: true,
             name: true,
             usageCount: true,
             customColor: true,
+            isExplicit: true,
             category: { select: { id: true, name: true, color: true } },
         },
     });
@@ -234,6 +360,64 @@ export async function patchTag(
         categoryId: tag.category.id,
         categoryName: tag.category.name,
         color: tag.customColor ?? tag.category.color,
-        customColor: tag.customColor,
+        customColor: tag.customColor ?? null,
+        isExplicit: tag.isExplicit,
     };
+}
+
+export async function createTag(input: { name: string; categoryId: string }) {
+    const name = normalizeTagName(input.name);
+
+    return prisma.tag.create({
+        data: { name, categoryId: input.categoryId },
+        select: {
+            id: true,
+            name: true,
+            usageCount: true,
+            categoryId: true,
+            isExplicit: true,
+        },
+    });
+}
+
+export async function createAlias(params: { tagId: string; alias: string }) {
+    const alias = normalizeTagName(params.alias);
+
+    if (!alias) throw new Error('ALIAS_INVALID');
+
+    const tag = await prisma.tag.findUnique({
+        where: { id: params.tagId },
+        select: { id: true, name: true },
+    });
+    if (!tag) throw new Error('NOT_FOUND');
+
+    if (alias === tag.name) throw new Error('ALIAS_SAME_AS_TAG');
+
+    const existingTag = await prisma.tag.findUnique({
+        where: { name: alias },
+        select: { id: true },
+    });
+    if (existingTag) throw new Error('ALIAS_COLLIDES_WITH_TAG');
+
+    const created = await prisma.tagAlias.create({
+        data: { tagId: params.tagId, alias },
+        select: { id: true, alias: true, tagId: true },
+    });
+
+    return created;
+}
+
+export async function listAliasesForTag(tagId: string) {
+    const rows = await prisma.tagAlias.findMany({
+        where: { tagId },
+        orderBy: { alias: 'asc' },
+        select: { id: true, alias: true, tagId: true },
+    });
+
+    return rows;
+}
+
+export async function deleteAlias(aliasId: string) {
+    await prisma.tagAlias.delete({ where: { id: aliasId } });
+    return { ok: true };
 }

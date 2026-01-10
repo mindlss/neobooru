@@ -9,6 +9,10 @@ export const tagSearchSchema = z.object({
     limit: z.coerce.number().int().min(1).max(50).default(20),
 });
 
+export const tagPopularSchema = z.object({
+    limit: z.coerce.number().int().min(1).max(200).default(50),
+});
+
 export const createTagSchema = z.object({
     name: z.string().min(1).max(64),
     categoryId: z.string().uuid(),
@@ -20,4 +24,10 @@ export const patchTagSchema = z.object({
         .regex(/^#([0-9a-fA-F]{6})$/, 'Expected HEX color like #RRGGBB')
         .nullable()
         .optional(),
+
+    isExplicit: z.boolean().optional(),
+});
+
+export const createAliasSchema = z.object({
+    alias: z.string().min(1).max(64),
 });

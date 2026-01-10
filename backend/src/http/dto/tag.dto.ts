@@ -13,9 +13,22 @@ export type TagSearchDTO = {
     categoryName?: string;
 };
 
+export type TagSuggestDTO = {
+    kind: 'tag' | 'alias';
+    id: string;
+    name: string;
+    usageCount: number;
+    color: string;
+    categoryName?: string;
+
+    canonicalId: string;
+    canonicalName: string;
+};
+
 export type TagAdminDTO = TagSearchDTO & {
     categoryId: string;
     customColor: string | null;
+    isExplicit: boolean;
 };
 
 export function toTagPublicDTO(t: any): TagPublicDTO {
@@ -37,6 +50,19 @@ export function toTagSearchDTO(t: any): TagSearchDTO {
     };
 }
 
+export function toTagSuggestDTO(t: any): TagSuggestDTO {
+    return {
+        kind: t.kind,
+        id: t.id,
+        name: t.name,
+        color: t.color,
+        usageCount: t.usageCount ?? 0,
+        ...(t.categoryName ? { categoryName: t.categoryName } : {}),
+        canonicalId: t.canonicalId,
+        canonicalName: t.canonicalName,
+    };
+}
+
 export function toTagAdminDTO(t: any): TagAdminDTO {
     return {
         id: t.id,
@@ -46,5 +72,6 @@ export function toTagAdminDTO(t: any): TagAdminDTO {
         categoryName: t.categoryName,
         categoryId: t.categoryId,
         customColor: t.customColor ?? null,
+        isExplicit: !!t.isExplicit,
     };
 }

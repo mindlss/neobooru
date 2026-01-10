@@ -296,7 +296,8 @@ model Tag {
   categoryId String
   usageCount Int    @default(0)
 
-  customColor String? // HEX override, например "#FF00AA"
+  customColor String?
+  isExplicit  Boolean @default(false)
 
   category   TagCategory  @relation(fields: [categoryId], references: [id])
   mediaLinks MediaTags[]
@@ -305,6 +306,7 @@ model Tag {
 
   @@index([name])
   @@index([usageCount])
+  @@index([isExplicit])
 }
 
 

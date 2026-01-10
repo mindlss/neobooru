@@ -2,18 +2,24 @@ import { asyncHandler } from '../utils/asyncHandler';
 import {
     tagNamesSchema,
     tagSearchSchema,
+    tagPopularSchema,
     createTagSchema,
     patchTagSchema,
+    createAliasSchema,
 } from '../schemas/tagging.schemas';
 import {
     addTagsToMedia,
     removeTagsFromMedia,
     setTagsForMedia,
-    searchTags,
+    searchTagsAutocomplete,
+    listPopularTags,
     createTag,
     patchTag,
+    createAlias,
+    deleteAlias,
+    listAliasesForTag,
 } from '../../domain/tags/tagging.service';
-import { toTagAdminDTO, toTagSearchDTO } from '../dto';
+import { toTagAdminDTO, toTagSuggestDTO, toTagSearchDTO } from '../dto';
 import { parseBody, parseQuery } from '../utils/parse';
 
 export const addTags = asyncHandler(async (req, res) => {
@@ -42,7 +48,23 @@ export const setTags = asyncHandler(async (req, res) => {
 
 export const search = asyncHandler(async (req, res) => {
     const q = parseQuery(tagSearchSchema, req.query);
-    const tags = await searchTags(q.q, q.limit);
+
+    const rows = await searchTagsAutocomplete({
+        q: q.q,
+        limit: q.limit,
+        viewer: req.viewer,
+    });
+
+    res.json({ data: rows.map(toTagSuggestDTO) });
+});
+
+export const popular = asyncHandler(async (req, res) => {
+    const q = parseQuery(tagPopularSchema, req.query);
+
+    const tags = await listPopularTags({
+        limit: q.limit,
+        viewer: req.viewer,
+    });
 
     res.json({ data: tags.map(toTagSearchDTO) });
 });
@@ -51,7 +73,7 @@ export const create = asyncHandler(async (req, res) => {
     const body = parseBody(createTagSchema, req.body);
     const tag = await createTag(body);
 
-    res.status(201).json(toTagAdminDTO(tag));
+    res.status(201).json(tag);
 });
 
 export const patch = asyncHandler(async (req, res) => {
@@ -60,4 +82,25 @@ export const patch = asyncHandler(async (req, res) => {
 
     const updated = await patchTag(id, body);
     res.json(toTagAdminDTO(updated));
+});
+
+// aliases
+export const createTagAlias = asyncHandler(async (req, res) => {
+    const { id } = req.params; // tagId
+    const body = parseBody(createAliasSchema, req.body);
+
+    const created = await createAlias({ tagId: id, alias: body.alias });
+    res.status(201).json(created);
+});
+
+export const listTagAliases = asyncHandler(async (req, res) => {
+    const { id } = req.params; // tagId
+    const rows = await listAliasesForTag(id);
+    res.json({ data: rows });
+});
+
+export const deleteTagAlias = asyncHandler(async (req, res) => {
+    const { id } = req.params; // aliasId
+    await deleteAlias(id);
+    res.json({ status: 'ok' });
 });
