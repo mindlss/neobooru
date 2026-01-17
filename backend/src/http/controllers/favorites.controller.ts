@@ -1,32 +1,82 @@
-import { asyncHandler } from '../utils/asyncHandler';
-import { parseParams } from '../utils/parse';
-import { apiError } from '../errors/ApiError';
+import {
+    Controller,
+    Delete,
+    Path,
+    Post,
+    Request,
+    Route,
+    Security,
+    Tags,
+} from 'tsoa';
+import type { Request as ExpressRequest } from 'express';
+
+import { RestrictionType } from '@prisma/client';
+
+import { requireCurrentUser } from '../tsoa/context';
+import { requireNotBanned, requireNoActiveRestriction } from '../tsoa/guards';
+
+import type { OkDTO } from '../dto/common.dto';
+
 import { mediaIdParamsSchema } from '../schemas/media.schemas';
 import {
     addFavorite,
     removeFavorite,
 } from '../../domain/media/favorites.service';
 
-export const favorite = asyncHandler(async (req, res) => {
-    if (!req.currentUser) {
-        throw apiError(500, 'INTERNAL_SERVER_ERROR', 'currentUser not loaded');
+@Route('media')
+@Tags('Favorites')
+export class FavoritesController extends Controller {
+    /**
+     * POST /media/:id/favorite
+     */
+    @Post('{id}/favorite')
+    @Security('cookieAuth')
+    public async favorite(
+        @Path() id: string,
+        @Request() req: ExpressRequest,
+    ): Promise<OkDTO> {
+        await requireCurrentUser(req);
+
+        requireNotBanned(req.currentUser);
+
+        await requireNoActiveRestriction(req.currentUser?.id, [
+            RestrictionType.FULL_BAN,
+        ]);
+
+        const params = mediaIdParamsSchema.parse({ id });
+
+        await addFavorite({
+            userId: req.currentUser!.id,
+            mediaId: params.id,
+        });
+
+        return { status: 'ok' };
     }
 
-    const params = parseParams(mediaIdParamsSchema, req.params);
+    /**
+     * DELETE /media/:id/favorite
+     */
+    @Delete('{id}/favorite')
+    @Security('cookieAuth')
+    public async unfavorite(
+        @Path() id: string,
+        @Request() req: ExpressRequest,
+    ): Promise<OkDTO> {
+        await requireCurrentUser(req);
 
-    await addFavorite({ userId: req.currentUser.id, mediaId: params.id });
+        requireNotBanned(req.currentUser);
 
-    res.json({ status: 'ok' });
-});
+        await requireNoActiveRestriction(req.currentUser?.id, [
+            RestrictionType.FULL_BAN,
+        ]);
 
-export const unfavorite = asyncHandler(async (req, res) => {
-    if (!req.currentUser) {
-        throw apiError(500, 'INTERNAL_SERVER_ERROR', 'currentUser not loaded');
+        const params = mediaIdParamsSchema.parse({ id });
+
+        await removeFavorite({
+            userId: req.currentUser!.id,
+            mediaId: params.id,
+        });
+
+        return { status: 'ok' };
     }
-
-    const params = parseParams(mediaIdParamsSchema, req.params);
-
-    await removeFavorite({ userId: req.currentUser.id, mediaId: params.id });
-
-    res.json({ status: 'ok' });
-});
+}

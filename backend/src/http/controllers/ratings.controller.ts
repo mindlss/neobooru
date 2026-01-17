@@ -1,70 +1,123 @@
-import { asyncHandler } from '../utils/asyncHandler';
-import { parseBody, parseParams } from '../utils/parse';
+import {
+    Body,
+    Controller,
+    Delete,
+    Path,
+    Post,
+    Request,
+    Route,
+    Security,
+    Tags,
+} from 'tsoa';
+import type { Request as ExpressRequest } from 'express';
+
+import { RestrictionType } from '@prisma/client';
+
 import { apiError } from '../errors/ApiError';
+import { requireCurrentUser } from '../tsoa/context';
+import { requireNotBanned, requireNoActiveRestriction } from '../tsoa/guards';
+
 import { mediaIdParamsSchema } from '../schemas/media.schemas';
 import { setRatingSchema } from '../schemas/ratings.schemas';
+
 import { removeRating, setRating } from '../../domain/ratings/ratings.service';
 
-export const rateMedia = asyncHandler(async (req, res) => {
-    if (!req.currentUser || !req.viewer?.id) {
-        throw apiError(
-            500,
-            'INTERNAL_SERVER_ERROR',
-            'currentUser/viewer not loaded'
-        );
-    }
+import type {
+    RateMediaResponseDTO,
+    SetRatingBodyDTO,
+} from '../dto/ratings.dto';
 
-    const params = parseParams(mediaIdParamsSchema, req.params);
-    const body = parseBody(setRatingSchema, req.body);
+@Route('media')
+@Tags('Ratings')
+export class RatingsController extends Controller {
+    /**
+     * POST /media/:id/rating
+     */
+    @Post('{id}/rating')
+    @Security('cookieAuth')
+    public async rateMedia(
+        @Path() id: string,
+        @Body() body: SetRatingBodyDTO,
+        @Request() req: ExpressRequest,
+    ): Promise<RateMediaResponseDTO> {
+        await requireCurrentUser(req);
 
-    try {
-        const result = await setRating({
-            mediaId: params.id,
-            userId: req.currentUser.id,
-            value: body.value,
-            viewer: {
-                id: req.viewer.id!,
-                role: req.viewer.role,
-                isAdult: req.viewer.isAdult,
-            },
-        });
+        requireNotBanned(req.currentUser);
 
-        res.json({ status: 'ok', ...result });
-    } catch (e: any) {
-        if (e?.message === 'NOT_FOUND') {
-            throw apiError(404, 'NOT_FOUND', 'Media not found');
+        await requireNoActiveRestriction(req.currentUser?.id, [
+            RestrictionType.RATING_BAN,
+            RestrictionType.FULL_BAN,
+        ]);
+
+        if (!req.viewer?.id) {
+            throw apiError(500, 'INTERNAL_SERVER_ERROR', 'viewer not loaded');
         }
-        throw e;
-    }
-});
 
-export const unrateMedia = asyncHandler(async (req, res) => {
-    if (!req.currentUser || !req.viewer?.id) {
-        throw apiError(
-            500,
-            'INTERNAL_SERVER_ERROR',
-            'currentUser/viewer not loaded'
-        );
-    }
+        const params = mediaIdParamsSchema.parse({ id });
+        const parsedBody = setRatingSchema.parse(body);
 
-    const params = parseParams(mediaIdParamsSchema, req.params);
+        try {
+            const result = await setRating({
+                mediaId: params.id,
+                userId: req.currentUser!.id,
+                value: parsedBody.value,
+                viewer: {
+                    id: req.viewer.id,
+                    role: req.viewer.role,
+                    isAdult: req.viewer.isAdult,
+                },
+            });
 
-    try {
-        const result = await removeRating({
-            mediaId: params.id,
-            userId: req.currentUser.id,
-            viewer: {
-                id: req.viewer.id!,
-                role: req.viewer.role,
-                isAdult: req.viewer.isAdult,
-            },
-        });
-
-        res.json({ status: 'ok', ...result });
-    } catch (e: any) {
-        if (e?.message === 'NOT_FOUND') {
-            throw apiError(404, 'NOT_FOUND', 'Media not found');
+            return { status: 'ok', ...result };
+        } catch (e: any) {
+            if (e?.message === 'NOT_FOUND') {
+                throw apiError(404, 'NOT_FOUND', 'Media not found');
+            }
+            throw e;
         }
-        throw e;
     }
-});
+
+    /**
+     * DELETE /media/:id/rating
+     */
+    @Delete('{id}/rating')
+    @Security('cookieAuth')
+    public async unrateMedia(
+        @Path() id: string,
+        @Request() req: ExpressRequest,
+    ): Promise<RateMediaResponseDTO> {
+        await requireCurrentUser(req);
+
+        requireNotBanned(req.currentUser);
+
+        await requireNoActiveRestriction(req.currentUser?.id, [
+            RestrictionType.RATING_BAN,
+            RestrictionType.FULL_BAN,
+        ]);
+
+        if (!req.viewer?.id) {
+            throw apiError(500, 'INTERNAL_SERVER_ERROR', 'viewer not loaded');
+        }
+
+        const params = mediaIdParamsSchema.parse({ id });
+
+        try {
+            const result = await removeRating({
+                mediaId: params.id,
+                userId: req.currentUser!.id,
+                viewer: {
+                    id: req.viewer.id,
+                    role: req.viewer.role,
+                    isAdult: req.viewer.isAdult,
+                },
+            });
+
+            return { status: 'ok', ...result };
+        } catch (e: any) {
+            if (e?.message === 'NOT_FOUND') {
+                throw apiError(404, 'NOT_FOUND', 'Media not found');
+            }
+            throw e;
+        }
+    }
+}
