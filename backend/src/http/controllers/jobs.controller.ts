@@ -1,7 +1,25 @@
-import type { Request, Response } from 'express';
+import {
+    Controller,
+    Get,
+    Path,
+    Post,
+    Request,
+    Route,
+    Security,
+    Tags,
+} from 'tsoa';
+import type { Request as ExpressRequest } from 'express';
+import { UserRole } from '@prisma/client';
+
+import { prisma } from '../../lib/prisma';
 import { runJobNow, getJobsStatus } from '../../jobs/runner';
 import type { JobName } from '../../jobs/types';
-import { prisma } from '../../lib/prisma';
+
+import { apiError } from '../errors/ApiError';
+import { requireCurrentUser } from '../tsoa/context';
+import { requireNotBanned, requireRole } from '../tsoa/guards';
+
+import type { JobsListResponseDTO, RunJobResponseDTO } from '../dto/jobs.dto';
 
 const allowedJobs: JobName[] = [
     'quota_reset',
@@ -13,51 +31,70 @@ function isJobName(x: string): x is JobName {
     return (allowedJobs as string[]).includes(x);
 }
 
-export async function listJobs(_req: Request, res: Response) {
-    return res.json({ data: getJobsStatus(), allowedJobs });
-}
+@Route('jobs')
+@Tags('Jobs')
+export class JobsController extends Controller {
+    /**
+     * GET /jobs
+     * MOD/ADMIN only
+     */
+    @Get()
+    @Security('cookieAuth')
+    public async listJobs(
+        @Request() req: ExpressRequest,
+    ): Promise<JobsListResponseDTO> {
+        await requireCurrentUser(req);
+        requireNotBanned(req.currentUser);
+        requireRole(req.viewer!.role, [UserRole.MODERATOR, UserRole.ADMIN]);
 
-export async function runJob(req: Request, res: Response) {
-    const nameRaw = String(req.params.name ?? '');
-    if (!isJobName(nameRaw)) {
-        return res.status(400).json({
-            error: {
-                code: 'BAD_REQUEST',
-                message: 'Unknown job name',
+        return { data: getJobsStatus(), allowedJobs };
+    }
+
+    /**
+     * POST /jobs/:name/run
+     * MOD/ADMIN only
+     */
+    @Post('{name}/run')
+    @Security('cookieAuth')
+    public async runJob(
+        @Path() name: string,
+        @Request() req: ExpressRequest,
+    ): Promise<RunJobResponseDTO> {
+        await requireCurrentUser(req);
+        requireNotBanned(req.currentUser);
+        requireRole(req.viewer!.role, [UserRole.MODERATOR, UserRole.ADMIN]);
+
+        const nameRaw = String(name ?? '');
+        if (!isJobName(nameRaw)) {
+            throw apiError(400, 'BAD_REQUEST', 'Unknown job name', {
                 allowedJobs,
+            });
+        }
+
+        const userId = req.currentUser!.id;
+        const role = req.currentUser!.role;
+
+        const result = await runJobNow(nameRaw, {
+            type: 'manual',
+            byUserId: userId,
+            byRole: String(role),
+        });
+
+        await prisma.moderationLog.create({
+            data: {
+                action: 'JOB_RUN',
+                targetType: 'JOB',
+                targetId: nameRaw,
+                moderatorId: userId,
+                details: {
+                    job: nameRaw,
+                    ok: result.ok,
+                    message: result.message ?? null,
+                    stats: result.stats ?? null,
+                },
             },
         });
+
+        return { data: { job: nameRaw, result } };
     }
-
-    const userId = req.currentUser?.id ?? req.user?.id;
-    const role = req.currentUser?.role ?? req.user?.role;
-
-    if (!userId || !role) {
-        return res.status(401).json({
-            error: { code: 'UNAUTHORIZED', message: 'Missing auth' },
-        });
-    }
-
-    const result = await runJobNow(nameRaw, {
-        type: 'manual',
-        byUserId: userId,
-        byRole: String(role),
-    });
-
-    await prisma.moderationLog.create({
-        data: {
-            action: 'JOB_RUN',
-            targetType: 'JOB',
-            targetId: nameRaw,
-            moderatorId: userId,
-            details: {
-                job: nameRaw,
-                ok: result.ok,
-                message: result.message ?? null,
-                stats: result.stats ?? null,
-            },
-        },
-    });
-
-    return res.json({ data: { job: nameRaw, result } });
 }

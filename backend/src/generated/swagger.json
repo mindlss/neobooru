@@ -1476,6 +1476,68 @@
 				],
 				"type": "object"
 			},
+			"JobName": {
+				"type": "string",
+				"enum": [
+					"quota_reset",
+					"restriction_expire",
+					"comic_rebuild"
+				]
+			},
+			"JobsListResponseDTO": {
+				"properties": {
+					"allowedJobs": {
+						"items": {
+							"$ref": "#/components/schemas/JobName"
+						},
+						"type": "array"
+					},
+					"data": {}
+				},
+				"required": [
+					"allowedJobs",
+					"data"
+				],
+				"type": "object"
+			},
+			"RunJobResultDTO": {
+				"properties": {
+					"stats": {},
+					"message": {
+						"type": "string"
+					},
+					"ok": {
+						"type": "boolean"
+					}
+				},
+				"required": [
+					"ok"
+				],
+				"type": "object"
+			},
+			"RunJobResponseDTO": {
+				"properties": {
+					"data": {
+						"properties": {
+							"result": {
+								"$ref": "#/components/schemas/RunJobResultDTO"
+							},
+							"job": {
+								"$ref": "#/components/schemas/JobName"
+							}
+						},
+						"required": [
+							"result",
+							"job"
+						],
+						"type": "object"
+					}
+				},
+				"required": [
+					"data"
+				],
+				"type": "object"
+			},
 			"CommentsListResponseDTO": {
 				"properties": {
 					"nextCursor": {
@@ -1516,6 +1578,213 @@
 						"type": "string"
 					}
 				},
+				"type": "object"
+			},
+			"ComicStatusDTO": {
+				"type": "string",
+				"enum": [
+					"WIP",
+					"FINISHED",
+					"DEAD"
+				]
+			},
+			"ComicPageDTO": {
+				"properties": {
+					"addedAt": {
+						"type": "string"
+					},
+					"position": {
+						"type": "number",
+						"format": "double"
+					},
+					"mediaId": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"addedAt",
+					"position",
+					"mediaId"
+				],
+				"type": "object"
+			},
+			"ComicTagDTO": {
+				"properties": {
+					"isExplicit": {
+						"type": "boolean"
+					},
+					"name": {
+						"type": "string"
+					},
+					"id": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"isExplicit",
+					"name",
+					"id"
+				],
+				"type": "object"
+			},
+			"ComicDTO": {
+				"properties": {
+					"tags": {
+						"items": {
+							"$ref": "#/components/schemas/ComicTagDTO"
+						},
+						"type": "array"
+					},
+					"pages": {
+						"items": {
+							"$ref": "#/components/schemas/ComicPageDTO"
+						},
+						"type": "array"
+					},
+					"updatedAt": {
+						"type": "string"
+					},
+					"createdAt": {
+						"type": "string"
+					},
+					"ratingCount": {
+						"type": "number",
+						"format": "double"
+					},
+					"ratingAvg": {
+						"type": "number",
+						"format": "double"
+					},
+					"isExplicit": {
+						"type": "boolean"
+					},
+					"randomKey": {
+						"type": "number",
+						"format": "double"
+					},
+					"lastPageMediaId": {
+						"type": "string",
+						"nullable": true
+					},
+					"lastPageAddedAt": {
+						"type": "string",
+						"nullable": true
+					},
+					"coverMediaId": {
+						"type": "string",
+						"nullable": true
+					},
+					"createdById": {
+						"type": "string"
+					},
+					"status": {
+						"$ref": "#/components/schemas/ComicStatusDTO"
+					},
+					"title": {
+						"type": "string"
+					},
+					"id": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"tags",
+					"pages",
+					"updatedAt",
+					"createdAt",
+					"ratingCount",
+					"ratingAvg",
+					"isExplicit",
+					"randomKey",
+					"lastPageMediaId",
+					"lastPageAddedAt",
+					"coverMediaId",
+					"createdById",
+					"status",
+					"title",
+					"id"
+				],
+				"type": "object"
+			},
+			"ComicResponseDTO": {
+				"properties": {
+					"data": {
+						"$ref": "#/components/schemas/ComicDTO"
+					}
+				},
+				"required": [
+					"data"
+				],
+				"type": "object"
+			},
+			"CreateComicBodyDTO": {
+				"properties": {
+					"title": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"title"
+				],
+				"type": "object"
+			},
+			"UpdateComicBodyDTO": {
+				"properties": {
+					"coverMediaId": {
+						"type": "string",
+						"nullable": true
+					},
+					"status": {
+						"$ref": "#/components/schemas/ComicStatusDTO"
+					},
+					"title": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"AddComicPageBodyDTO": {
+				"properties": {
+					"position": {
+						"type": "number",
+						"format": "double"
+					},
+					"mediaId": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"mediaId"
+				],
+				"type": "object"
+			},
+			"OkResponseDTO": {
+				"properties": {
+					"ok": {
+						"type": "boolean",
+						"enum": [
+							true
+						],
+						"nullable": false
+					}
+				},
+				"required": [
+					"ok"
+				],
+				"type": "object"
+			},
+			"ReorderComicPagesBodyDTO": {
+				"properties": {
+					"orderedMediaIds": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array"
+					}
+				},
+				"required": [
+					"orderedMediaIds"
+				],
 				"type": "object"
 			},
 			"AuthResponseDTO": {
@@ -3095,6 +3364,69 @@
 				"parameters": []
 			}
 		},
+		"/jobs": {
+			"get": {
+				"operationId": "ListJobs",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/JobsListResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "GET /jobs\nMOD/ADMIN only",
+				"tags": [
+					"Jobs"
+				],
+				"security": [
+					{
+						"cookieAuth": []
+					}
+				],
+				"parameters": []
+			}
+		},
+		"/jobs/{name}/run": {
+			"post": {
+				"operationId": "RunJob",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/RunJobResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "POST /jobs/:name/run\nMOD/ADMIN only",
+				"tags": [
+					"Jobs"
+				],
+				"security": [
+					{
+						"cookieAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "name",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				]
+			}
+		},
 		"/media/{id}/favorite": {
 			"post": {
 				"operationId": "Favorite",
@@ -3310,6 +3642,259 @@
 						"application/json": {
 							"schema": {
 								"$ref": "#/components/schemas/DeleteCommentBodyDTO"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/comics": {
+			"post": {
+				"operationId": "CreateComic",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ComicResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "POST /comics\nauth required + not banned + role allowed",
+				"tags": [
+					"Comics"
+				],
+				"security": [
+					{
+						"cookieAuth": []
+					}
+				],
+				"parameters": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/CreateComicBodyDTO"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/comics/{id}": {
+			"get": {
+				"operationId": "GetComic",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ComicResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "GET /comics/:id\nauth required (по твоему роутеру)",
+				"tags": [
+					"Comics"
+				],
+				"security": [
+					{
+						"cookieAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				]
+			},
+			"patch": {
+				"operationId": "UpdateComic",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ComicResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "PATCH /comics/:id",
+				"tags": [
+					"Comics"
+				],
+				"security": [
+					{
+						"cookieAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/UpdateComicBodyDTO"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/comics/{id}/pages": {
+			"post": {
+				"operationId": "AddComicPage",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ComicResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "POST /comics/:id/pages",
+				"tags": [
+					"Comics"
+				],
+				"security": [
+					{
+						"cookieAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/AddComicPageBodyDTO"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/comics/{id}/pages/{mediaId}": {
+			"delete": {
+				"operationId": "RemoveComicPage",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/OkResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "DELETE /comics/:id/pages/:mediaId",
+				"tags": [
+					"Comics"
+				],
+				"security": [
+					{
+						"cookieAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "path",
+						"name": "mediaId",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				]
+			}
+		},
+		"/comics/{id}/pages/reorder": {
+			"post": {
+				"operationId": "ReorderPages",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/OkResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "POST /comics/:id/pages/reorder",
+				"tags": [
+					"Comics"
+				],
+				"security": [
+					{
+						"cookieAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/ReorderComicPagesBodyDTO"
 							}
 						}
 					}
