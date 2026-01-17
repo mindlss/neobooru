@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
+import { ValidateError } from 'tsoa';
 import { logger } from '../../config/logger';
 import { isApiError } from '../errors/ApiError';
 import {
@@ -42,6 +43,27 @@ export function errorMiddleware(
     _next: NextFunction
 ) {
     const requestId = getRequestId(req);
+
+    // 0) tsoa validation errors (query/path/body type coercion)
+    if (err instanceof ValidateError) {
+        logger.warn(
+            {
+                requestId,
+                code: 'VALIDATION_ERROR',
+                fields: err.fields,
+                path: req.path,
+                method: req.method,
+            },
+            'Invalid request (tsoa)'
+        );
+
+        return sendError(res, 400, {
+            code: 'VALIDATION_ERROR',
+            message: 'Invalid request',
+            details: { fields: err.fields },
+            requestId,
+        });
+    }
 
     // 1) Explicit API errors
     if (isApiError(err)) {

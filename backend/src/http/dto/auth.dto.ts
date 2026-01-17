@@ -1,17 +1,23 @@
 import type { UserSelfDTO } from './user.dto';
 import { toUserSelfDTO } from './user.dto';
 
-export type AuthResponseDTO = {
-    user: UserSelfDTO;
-    accessToken: string;
+export type RegisterBodyDTO = {
+    username: string;
+    email: string;
+    password: string;
 };
 
-export function toAuthResponseDTO(input: {
-    user: any;
-    token: string;
-}): AuthResponseDTO {
+export type LoginBodyDTO = {
+    email: string;
+    password: string;
+};
+
+export type AuthResponseDTO = {
+    user: UserSelfDTO;
+};
+
+export function toAuthResponseDTO(input: { user: any }): AuthResponseDTO {
     return {
         user: toUserSelfDTO(input.user),
-        accessToken: input.token,
     };
 }

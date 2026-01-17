@@ -1,0 +1,414 @@
+{
+	"openapi": "3.0.0",
+	"components": {
+		"examples": {},
+		"headers": {},
+		"parameters": {},
+		"requestBodies": {},
+		"responses": {},
+		"schemas": {
+			"_36_Enums.UserRole": {
+				"type": "string",
+				"enum": [
+					"GUEST",
+					"UNVERIFIED",
+					"USER",
+					"TRUSTED",
+					"MODERATOR",
+					"ADMIN"
+				]
+			},
+			"UserRole": {
+				"$ref": "#/components/schemas/_36_Enums.UserRole"
+			},
+			"UserSelfDTO": {
+				"properties": {
+					"isBanned": {
+						"type": "boolean"
+					},
+					"warningCount": {
+						"type": "number",
+						"format": "double"
+					},
+					"uploadCount": {
+						"type": "number",
+						"format": "double"
+					},
+					"showUploads": {
+						"type": "boolean"
+					},
+					"showFavorites": {
+						"type": "boolean"
+					},
+					"showRatings": {
+						"type": "boolean"
+					},
+					"showComments": {
+						"type": "boolean"
+					},
+					"emailVerifiedAt": {
+						"type": "string",
+						"nullable": true
+					},
+					"updatedAt": {
+						"type": "string"
+					},
+					"createdAt": {
+						"type": "string"
+					},
+					"website": {
+						"type": "string",
+						"nullable": true
+					},
+					"bio": {
+						"type": "string",
+						"nullable": true
+					},
+					"avatarUrl": {
+						"type": "string",
+						"nullable": true
+					},
+					"birthDate": {
+						"type": "string",
+						"nullable": true
+					},
+					"role": {
+						"$ref": "#/components/schemas/UserRole"
+					},
+					"email": {
+						"type": "string"
+					},
+					"username": {
+						"type": "string"
+					},
+					"id": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"isBanned",
+					"warningCount",
+					"uploadCount",
+					"showUploads",
+					"showFavorites",
+					"showRatings",
+					"showComments",
+					"emailVerifiedAt",
+					"updatedAt",
+					"createdAt",
+					"website",
+					"bio",
+					"avatarUrl",
+					"birthDate",
+					"role",
+					"email",
+					"username",
+					"id"
+				],
+				"type": "object"
+			},
+			"AuthResponseDTO": {
+				"properties": {
+					"user": {
+						"$ref": "#/components/schemas/UserSelfDTO"
+					}
+				},
+				"required": [
+					"user"
+				],
+				"type": "object"
+			},
+			"ErrorEnvelopeDTO": {
+				"properties": {
+					"error": {
+						"properties": {
+							"requestId": {
+								"type": "string"
+							},
+							"details": {},
+							"message": {
+								"type": "string"
+							},
+							"code": {
+								"type": "string"
+							}
+						},
+						"required": [
+							"code"
+						],
+						"type": "object"
+					}
+				},
+				"required": [
+					"error"
+				],
+				"type": "object"
+			},
+			"RegisterBodyDTO": {
+				"properties": {
+					"password": {
+						"type": "string"
+					},
+					"email": {
+						"type": "string"
+					},
+					"username": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"password",
+					"email",
+					"username"
+				],
+				"type": "object"
+			},
+			"LoginBodyDTO": {
+				"properties": {
+					"password": {
+						"type": "string"
+					},
+					"email": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"password",
+					"email"
+				],
+				"type": "object"
+			},
+			"OkDTO": {
+				"properties": {
+					"ok": {
+						"type": "boolean",
+						"enum": [
+							true
+						],
+						"nullable": false
+					}
+				},
+				"required": [
+					"ok"
+				],
+				"type": "object"
+			}
+		},
+		"securitySchemes": {
+			"cookieAuth": {
+				"type": "apiKey",
+				"in": "cookie",
+				"name": "accessToken"
+			},
+			"optionalCookieAuth": {
+				"type": "apiKey",
+				"in": "cookie",
+				"name": "accessToken"
+			}
+		}
+	},
+	"info": {
+		"title": "neobooru-backend",
+		"version": "0.0.1",
+		"contact": {}
+	},
+	"paths": {
+		"/auth/register": {
+			"post": {
+				"operationId": "Register",
+				"responses": {
+					"201": {
+						"description": "Created",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/AuthResponseDTO"
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Validation error",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorEnvelopeDTO"
+								},
+								"examples": {
+									"Example 1": {
+										"value": {
+											"error": {
+												"code": "VALIDATION_ERROR",
+												"message": "Invalid request",
+												"details": {
+													"issues": [
+														{
+															"path": [
+																"email"
+															],
+															"message": "Invalid email"
+														}
+													]
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				},
+				"tags": [
+					"Auth"
+				],
+				"security": [],
+				"parameters": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/RegisterBodyDTO"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/auth/login": {
+			"post": {
+				"operationId": "Login",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/AuthResponseDTO"
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Validation error",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorEnvelopeDTO"
+								},
+								"examples": {
+									"Example 1": {
+										"value": {
+											"error": {
+												"code": "VALIDATION_ERROR",
+												"message": "Invalid request",
+												"details": {
+													"issues": [
+														{
+															"path": [
+																"email"
+															],
+															"message": "Invalid email"
+														}
+													]
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Invalid credentials",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorEnvelopeDTO"
+								},
+								"examples": {
+									"Example 1": {
+										"value": {
+											"error": {
+												"code": "INVALID_CREDENTIALS",
+												"message": "Invalid email or password"
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				},
+				"tags": [
+					"Auth"
+				],
+				"security": [],
+				"parameters": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/LoginBodyDTO"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/auth/refresh": {
+			"post": {
+				"operationId": "Refresh",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/OkDTO"
+								}
+							}
+						}
+					}
+				},
+				"tags": [
+					"Auth"
+				],
+				"security": [],
+				"parameters": []
+			}
+		},
+		"/auth/logout": {
+			"post": {
+				"operationId": "Logout",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/OkDTO"
+								}
+							}
+						}
+					}
+				},
+				"tags": [
+					"Auth"
+				],
+				"security": [
+					{
+						"cookieAuth": []
+					}
+				],
+				"parameters": []
+			}
+		}
+	},
+	"servers": [
+		{
+			"url": "/"
+		}
+	]
+}

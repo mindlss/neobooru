@@ -43,6 +43,8 @@ const EnvSchema = z.object({
 
     JWT_SECRET: z.string().min(32),
     JWT_EXPIRES_IN: z.coerce.number().int().positive().default(900),
+    JWT_REFRESH_SECRET: z.string().min(32),
+    JWT_REFRESH_EXPIRES_IN: z.coerce.number().int().positive().default(2592000),
 
     MAX_UPLOAD_BYTES: z.coerce.number().int().positive().default(104857600),
 
