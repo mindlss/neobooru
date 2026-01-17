@@ -1,4 +1,25 @@
-import { asyncHandler } from '../utils/asyncHandler';
+import {
+    Body,
+    Controller,
+    Delete,
+    Get,
+    Patch,
+    Path,
+    Post,
+    Query,
+    Request,
+    Route,
+    Security,
+    SuccessResponse,
+    Tags,
+} from 'tsoa';
+import type { Request as ExpressRequest } from 'express';
+
+import { UserRole } from '@prisma/client';
+
+import { ensureViewer, requireCurrentUser } from '../tsoa/context';
+import { requireRole } from '../tsoa/guards';
+
 import {
     tagNamesSchema,
     tagSearchSchema,
@@ -7,6 +28,7 @@ import {
     patchTagSchema,
     createAliasSchema,
 } from '../schemas/tag.schemas';
+
 import {
     addTagsToMedia,
     removeTagsFromMedia,
@@ -19,88 +41,190 @@ import {
     deleteAlias,
     listAliasesForTag,
 } from '../../domain/tags/tags.service';
-import { toTagAdminDTO, toTagSuggestDTO, toTagSearchDTO } from '../dto';
-import { parseBody, parseQuery } from '../utils/parse';
 
-export const addTags = asyncHandler(async (req, res) => {
-    const { id } = req.params;
-    const body = parseBody(tagNamesSchema, req.body);
+import {
+    toTagAdminDTO,
+    toTagSuggestDTO,
+    toTagSearchDTO,
+    type TagAdminDTO,
+    TagAliasesListResponseDTO,
+    TagNamesBodyDTO,
+    CreateTagBodyDTO,
+    PatchTagBodyDTO,
+    CreateAliasBodyDTO,
+    TagSuggestListResponseDTO,
+    TagSearchListResponseDTO,
+} from '../dto/tag.dto';
 
-    await addTagsToMedia(id, body.tags);
-    res.json({ status: 'ok' });
-});
+import type { OkDTO } from '../dto/common.dto';
 
-export const removeTags = asyncHandler(async (req, res) => {
-    const { id } = req.params;
-    const body = parseBody(tagNamesSchema, req.body);
+@Route('')
+@Tags('Tags')
+export class TagsController extends Controller {
+    // public (viewer-aware)
+    @Get('tags/search')
+    @Security('optionalCookieAuth')
+    public async search(
+        @Request() req: ExpressRequest,
+        @Query('q') q: string,
+        @Query('limit') limit?: number,
+    ): Promise<TagSuggestListResponseDTO> {
+        await ensureViewer(req);
 
-    await removeTagsFromMedia(id, body.tags);
-    res.json({ status: 'ok' });
-});
+        const parsed = tagSearchSchema.parse({ q, limit });
 
-export const setTags = asyncHandler(async (req, res) => {
-    const { id } = req.params;
-    const body = parseBody(tagNamesSchema, req.body);
+        const rows = await searchTagsAutocomplete({
+            q: parsed.q,
+            limit: parsed.limit,
+            viewer: req.viewer,
+        });
 
-    await setTagsForMedia(id, body.tags);
-    res.json({ status: 'ok' });
-});
+        return { data: rows.map(toTagSuggestDTO) };
+    }
 
-export const search = asyncHandler(async (req, res) => {
-    const q = parseQuery(tagSearchSchema, req.query);
+    @Get('tags/popular')
+    @Security('optionalCookieAuth')
+    public async popular(
+        @Request() req: ExpressRequest,
+        @Query('limit') limit?: number,
+    ): Promise<TagSearchListResponseDTO> {
+        await ensureViewer(req);
 
-    const rows = await searchTagsAutocomplete({
-        q: q.q,
-        limit: q.limit,
-        viewer: req.viewer,
-    });
+        const parsed = tagPopularSchema.parse({ limit });
 
-    res.json({ data: rows.map(toTagSuggestDTO) });
-});
+        const tags = await listPopularTags({
+            limit: parsed.limit,
+            viewer: req.viewer,
+        });
 
-export const popular = asyncHandler(async (req, res) => {
-    const q = parseQuery(tagPopularSchema, req.query);
+        return { data: tags.map(toTagSearchDTO) };
+    }
 
-    const tags = await listPopularTags({
-        limit: q.limit,
-        viewer: req.viewer,
-    });
+    // admin/mod
+    @Post('tags')
+    @Security('cookieAuth')
+    @SuccessResponse(201, 'Created')
+    public async create(
+        @Body() body: CreateTagBodyDTO,
+        @Request() req: ExpressRequest,
+    ): Promise<any> {
+        await requireCurrentUser(req);
+        requireRole(req.viewer?.role, [UserRole.MODERATOR, UserRole.ADMIN]);
 
-    res.json({ data: tags.map(toTagSearchDTO) });
-});
+        const parsed = createTagSchema.parse(body);
+        const tag = await createTag(parsed);
 
-export const create = asyncHandler(async (req, res) => {
-    const body = parseBody(createTagSchema, req.body);
-    const tag = await createTag(body);
+        this.setStatus(201);
+        return tag;
+    }
 
-    res.status(201).json(tag);
-});
+    @Patch('tags/{id}')
+    @Security('cookieAuth')
+    public async patch(
+        @Path() id: string,
+        @Body() body: PatchTagBodyDTO,
+        @Request() req: ExpressRequest,
+    ): Promise<TagAdminDTO> {
+        await requireCurrentUser(req);
+        requireRole(req.viewer?.role, [UserRole.MODERATOR, UserRole.ADMIN]);
 
-export const patch = asyncHandler(async (req, res) => {
-    const { id } = req.params;
-    const body = parseBody(patchTagSchema, req.body);
+        const parsed = patchTagSchema.parse(body);
+        const updated = await patchTag(id, parsed);
 
-    const updated = await patchTag(id, body);
-    res.json(toTagAdminDTO(updated));
-});
+        return toTagAdminDTO(updated);
+    }
 
-// aliases
-export const createTagAlias = asyncHandler(async (req, res) => {
-    const { id } = req.params; // tagId
-    const body = parseBody(createAliasSchema, req.body);
+    // aliases (admin/mod)
+    @Get('tags/{id}/aliases')
+    @Security('cookieAuth')
+    public async listTagAliases(
+        @Path() id: string,
+        @Request() req: ExpressRequest,
+    ): Promise<TagAliasesListResponseDTO> {
+        await requireCurrentUser(req);
+        requireRole(req.viewer?.role, [UserRole.MODERATOR, UserRole.ADMIN]);
 
-    const created = await createAlias({ tagId: id, alias: body.alias });
-    res.status(201).json(created);
-});
+        const rows = await listAliasesForTag(id);
+        return { data: rows };
+    }
 
-export const listTagAliases = asyncHandler(async (req, res) => {
-    const { id } = req.params; // tagId
-    const rows = await listAliasesForTag(id);
-    res.json({ data: rows });
-});
+    @Post('tags/{id}/aliases')
+    @Security('cookieAuth')
+    @SuccessResponse(201, 'Created')
+    public async createTagAlias(
+        @Path() id: string,
+        @Body() body: CreateAliasBodyDTO,
+        @Request() req: ExpressRequest,
+    ): Promise<any> {
+        await requireCurrentUser(req);
+        requireRole(req.viewer?.role, [UserRole.MODERATOR, UserRole.ADMIN]);
 
-export const deleteTagAlias = asyncHandler(async (req, res) => {
-    const { id } = req.params; // aliasId
-    await deleteAlias(id);
-    res.json({ status: 'ok' });
-});
+        const parsed = createAliasSchema.parse(body);
+        const created = await createAlias({ tagId: id, alias: parsed.alias });
+
+        this.setStatus(201);
+        return created;
+    }
+
+    @Delete('tags/aliases/{id}')
+    @Security('cookieAuth')
+    public async deleteTagAlias(
+        @Path() id: string,
+        @Request() req: ExpressRequest,
+    ): Promise<OkDTO> {
+        await requireCurrentUser(req);
+        requireRole(req.viewer?.role, [UserRole.MODERATOR, UserRole.ADMIN]);
+
+        await deleteAlias(id);
+        return { status: 'ok' };
+    }
+
+    // media tags set/add/remove (admin/mod)
+    @Post('media/{id}/tags')
+    @Security('cookieAuth')
+    public async setTags(
+        @Path() id: string,
+        @Body() body: TagNamesBodyDTO,
+        @Request() req: ExpressRequest,
+    ): Promise<OkDTO> {
+        await requireCurrentUser(req);
+        requireRole(req.viewer?.role, [UserRole.MODERATOR, UserRole.ADMIN]);
+
+        const parsed = tagNamesSchema.parse(body);
+        await setTagsForMedia(id, parsed.tags);
+
+        return { status: 'ok' };
+    }
+
+    @Post('media/{id}/tags/add')
+    @Security('cookieAuth')
+    public async addTags(
+        @Path() id: string,
+        @Body() body: TagNamesBodyDTO,
+        @Request() req: ExpressRequest,
+    ): Promise<OkDTO> {
+        await requireCurrentUser(req);
+        requireRole(req.viewer?.role, [UserRole.MODERATOR, UserRole.ADMIN]);
+
+        const parsed = tagNamesSchema.parse(body);
+        await addTagsToMedia(id, parsed.tags);
+
+        return { status: 'ok' };
+    }
+
+    @Post('media/{id}/tags/remove')
+    @Security('cookieAuth')
+    public async removeTags(
+        @Path() id: string,
+        @Body() body: TagNamesBodyDTO,
+        @Request() req: ExpressRequest,
+    ): Promise<OkDTO> {
+        await requireCurrentUser(req);
+        requireRole(req.viewer?.role, [UserRole.MODERATOR, UserRole.ADMIN]);
+
+        const parsed = tagNamesSchema.parse(body);
+        await removeTagsFromMedia(id, parsed.tags);
+
+        return { status: 'ok' };
+    }
+}

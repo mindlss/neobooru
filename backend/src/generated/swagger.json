@@ -7,6 +7,561 @@
 		"requestBodies": {},
 		"responses": {},
 		"schemas": {
+			"TagSuggestDTO": {
+				"properties": {
+					"canonicalName": {
+						"type": "string"
+					},
+					"canonicalId": {
+						"type": "string"
+					},
+					"categoryName": {
+						"type": "string"
+					},
+					"color": {
+						"type": "string"
+					},
+					"usageCount": {
+						"type": "number",
+						"format": "double"
+					},
+					"name": {
+						"type": "string"
+					},
+					"id": {
+						"type": "string"
+					},
+					"kind": {
+						"type": "string",
+						"enum": [
+							"tag",
+							"alias"
+						]
+					}
+				},
+				"required": [
+					"canonicalName",
+					"canonicalId",
+					"color",
+					"usageCount",
+					"name",
+					"id",
+					"kind"
+				],
+				"type": "object"
+			},
+			"TagSuggestListResponseDTO": {
+				"properties": {
+					"data": {
+						"items": {
+							"$ref": "#/components/schemas/TagSuggestDTO"
+						},
+						"type": "array"
+					}
+				},
+				"required": [
+					"data"
+				],
+				"type": "object"
+			},
+			"TagSearchDTO": {
+				"properties": {
+					"categoryName": {
+						"type": "string"
+					},
+					"usageCount": {
+						"type": "number",
+						"format": "double"
+					},
+					"color": {
+						"type": "string"
+					},
+					"name": {
+						"type": "string"
+					},
+					"id": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"usageCount",
+					"color",
+					"name",
+					"id"
+				],
+				"type": "object"
+			},
+			"TagSearchListResponseDTO": {
+				"properties": {
+					"data": {
+						"items": {
+							"$ref": "#/components/schemas/TagSearchDTO"
+						},
+						"type": "array"
+					}
+				},
+				"required": [
+					"data"
+				],
+				"type": "object"
+			},
+			"CreateTagBodyDTO": {
+				"properties": {
+					"categoryId": {
+						"type": "string"
+					},
+					"name": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"categoryId",
+					"name"
+				],
+				"type": "object"
+			},
+			"TagAdminDTO": {
+				"allOf": [
+					{
+						"$ref": "#/components/schemas/TagSearchDTO"
+					},
+					{
+						"properties": {
+							"isExplicit": {
+								"type": "boolean"
+							},
+							"customColor": {
+								"type": "string",
+								"nullable": true
+							},
+							"categoryId": {
+								"type": "string"
+							}
+						},
+						"required": [
+							"isExplicit",
+							"customColor",
+							"categoryId"
+						],
+						"type": "object"
+					}
+				]
+			},
+			"PatchTagBodyDTO": {
+				"properties": {
+					"isExplicit": {
+						"type": "boolean"
+					},
+					"customColor": {
+						"type": "string",
+						"nullable": true
+					}
+				},
+				"type": "object"
+			},
+			"TagAliasesListResponseDTO": {
+				"properties": {
+					"data": {
+						"items": {},
+						"type": "array"
+					}
+				},
+				"required": [
+					"data"
+				],
+				"type": "object"
+			},
+			"CreateAliasBodyDTO": {
+				"properties": {
+					"alias": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"alias"
+				],
+				"type": "object"
+			},
+			"OkDTO": {
+				"properties": {
+					"status": {
+						"type": "string",
+						"enum": [
+							"ok"
+						],
+						"nullable": false
+					}
+				},
+				"required": [
+					"status"
+				],
+				"type": "object"
+			},
+			"TagNamesBodyDTO": {
+				"properties": {
+					"tags": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array"
+					}
+				},
+				"required": [
+					"tags"
+				],
+				"type": "object"
+			},
+			"SearchMetaDTO": {
+				"properties": {
+					"excludedComic": {
+						"type": "boolean"
+					},
+					"forcedByQuery": {
+						"type": "boolean"
+					},
+					"comicMode": {
+						"type": "boolean"
+					}
+				},
+				"required": [
+					"excludedComic",
+					"forcedByQuery",
+					"comicMode"
+				],
+				"type": "object"
+			},
+			"SearchMediaItemDTO": {
+				"properties": {
+					"previewUrl": {
+						"type": "string",
+						"nullable": true
+					},
+					"favorite": {
+						"type": "boolean"
+					},
+					"tags": {
+						"items": {
+							"allOf": [
+								{
+									"$ref": "#/components/schemas/TagSearchDTO"
+								},
+								{
+									"properties": {
+										"addedAt": {
+											"type": "string"
+										},
+										"customColor": {
+											"type": "string",
+											"nullable": true
+										},
+										"categoryId": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"addedAt",
+										"customColor",
+										"categoryId"
+									],
+									"type": "object"
+								}
+							]
+						},
+						"type": "array"
+					},
+					"deletedBy": {
+						"type": "string",
+						"nullable": true
+					},
+					"deletedAt": {
+						"type": "string",
+						"nullable": true
+					},
+					"updatedAt": {
+						"type": "string"
+					},
+					"createdAt": {
+						"type": "string"
+					},
+					"uploadedById": {
+						"type": "string"
+					},
+					"moderationNotes": {
+						"type": "string",
+						"nullable": true
+					},
+					"moderatedById": {
+						"type": "string",
+						"nullable": true
+					},
+					"moderatedAt": {
+						"type": "string",
+						"nullable": true
+					},
+					"moderationStatus": {
+						"type": "string",
+						"enum": [
+							"PENDING",
+							"APPROVED",
+							"REJECTED"
+						]
+					},
+					"previewKey": {
+						"type": "string",
+						"nullable": true
+					},
+					"originalKey": {
+						"type": "string"
+					},
+					"hash": {
+						"type": "string"
+					},
+					"commentCount": {
+						"type": "number",
+						"format": "double"
+					},
+					"myRating": {
+						"type": "number",
+						"format": "double",
+						"nullable": true
+					},
+					"ratingCount": {
+						"type": "number",
+						"format": "double"
+					},
+					"ratingAvg": {
+						"type": "number",
+						"format": "double"
+					},
+					"isExplicit": {
+						"type": "boolean"
+					},
+					"description": {
+						"type": "string",
+						"nullable": true
+					},
+					"duration": {
+						"type": "number",
+						"format": "double",
+						"nullable": true
+					},
+					"height": {
+						"type": "number",
+						"format": "double",
+						"nullable": true
+					},
+					"width": {
+						"type": "number",
+						"format": "double",
+						"nullable": true
+					},
+					"size": {
+						"type": "number",
+						"format": "double"
+					},
+					"contentType": {
+						"type": "string"
+					},
+					"type": {
+						"type": "string",
+						"enum": [
+							"IMAGE",
+							"VIDEO"
+						]
+					},
+					"id": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"previewUrl",
+					"favorite",
+					"tags",
+					"deletedBy",
+					"deletedAt",
+					"updatedAt",
+					"createdAt",
+					"uploadedById",
+					"moderationNotes",
+					"moderatedById",
+					"moderatedAt",
+					"moderationStatus",
+					"previewKey",
+					"originalKey",
+					"hash",
+					"commentCount",
+					"myRating",
+					"ratingCount",
+					"ratingAvg",
+					"isExplicit",
+					"description",
+					"duration",
+					"height",
+					"width",
+					"size",
+					"contentType",
+					"type",
+					"id"
+				],
+				"type": "object"
+			},
+			"SearchComicItemDTO": {
+				"properties": {
+					"previewUrl": {
+						"type": "string",
+						"nullable": true
+					},
+					"updatedAt": {
+						"type": "string"
+					},
+					"createdAt": {
+						"type": "string"
+					},
+					"ratingCount": {
+						"type": "number",
+						"format": "double"
+					},
+					"ratingAvg": {
+						"type": "number",
+						"format": "double"
+					},
+					"isExplicit": {
+						"type": "boolean"
+					},
+					"randomKey": {
+						"type": "number",
+						"format": "double"
+					},
+					"lastPageMediaId": {
+						"type": "string",
+						"nullable": true
+					},
+					"lastPageAddedAt": {
+						"type": "string",
+						"nullable": true
+					},
+					"coverMediaId": {
+						"type": "string",
+						"nullable": true
+					},
+					"createdById": {
+						"type": "string"
+					},
+					"status": {
+						"type": "string"
+					},
+					"title": {
+						"type": "string"
+					},
+					"id": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"previewUrl",
+					"updatedAt",
+					"createdAt",
+					"ratingCount",
+					"ratingAvg",
+					"isExplicit",
+					"randomKey",
+					"lastPageMediaId",
+					"lastPageAddedAt",
+					"coverMediaId",
+					"createdById",
+					"status",
+					"title",
+					"id"
+				],
+				"type": "object"
+			},
+			"SearchResponseDTO": {
+				"properties": {
+					"nextCursor": {
+						"type": "string",
+						"nullable": true
+					},
+					"data": {
+						"items": {
+							"anyOf": [
+								{
+									"$ref": "#/components/schemas/SearchMediaItemDTO"
+								},
+								{
+									"$ref": "#/components/schemas/SearchComicItemDTO"
+								}
+							]
+						},
+						"type": "array"
+					},
+					"meta": {
+						"$ref": "#/components/schemas/SearchMetaDTO"
+					}
+				},
+				"required": [
+					"nextCursor",
+					"data",
+					"meta"
+				],
+				"type": "object"
+			},
+			"RatingResultDTO": {
+				"properties": {
+					"myRating": {
+						"type": "number",
+						"format": "double",
+						"nullable": true
+					},
+					"ratingCount": {
+						"type": "number",
+						"format": "double"
+					},
+					"ratingAvg": {
+						"type": "number",
+						"format": "double"
+					}
+				},
+				"required": [
+					"myRating",
+					"ratingCount",
+					"ratingAvg"
+				],
+				"type": "object"
+			},
+			"RateMediaResponseDTO": {
+				"allOf": [
+					{
+						"properties": {
+							"status": {
+								"type": "string",
+								"enum": [
+									"ok"
+								],
+								"nullable": false
+							}
+						},
+						"required": [
+							"status"
+						],
+						"type": "object"
+					},
+					{
+						"$ref": "#/components/schemas/RatingResultDTO"
+					}
+				]
+			},
+			"SetRatingBodyDTO": {
+				"properties": {
+					"value": {
+						"type": "number",
+						"format": "double"
+					}
+				},
+				"required": [
+					"value"
+				],
+				"type": "object"
+			},
 			"TagPublicDTO": {
 				"properties": {
 					"addedAt": {
@@ -410,21 +965,6 @@
 				],
 				"type": "object"
 			},
-			"OkDTO": {
-				"properties": {
-					"status": {
-						"type": "string",
-						"enum": [
-							"ok"
-						],
-						"nullable": false
-					}
-				},
-				"required": [
-					"status"
-				],
-				"type": "object"
-			},
 			"DeleteCommentBodyDTO": {
 				"properties": {
 					"reason": {
@@ -610,6 +1150,544 @@
 		"contact": {}
 	},
 	"paths": {
+		"/tags/search": {
+			"get": {
+				"operationId": "Search",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/TagSuggestListResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"tags": [
+					"Tags"
+				],
+				"security": [
+					{
+						"optionalCookieAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"in": "query",
+						"name": "q",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
+						"name": "limit",
+						"required": false,
+						"schema": {
+							"format": "double",
+							"type": "number"
+						}
+					}
+				]
+			}
+		},
+		"/tags/popular": {
+			"get": {
+				"operationId": "Popular",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/TagSearchListResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"tags": [
+					"Tags"
+				],
+				"security": [
+					{
+						"optionalCookieAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"in": "query",
+						"name": "limit",
+						"required": false,
+						"schema": {
+							"format": "double",
+							"type": "number"
+						}
+					}
+				]
+			}
+		},
+		"/tags": {
+			"post": {
+				"operationId": "Create",
+				"responses": {
+					"201": {
+						"description": "Created",
+						"content": {
+							"application/json": {
+								"schema": {}
+							}
+						}
+					}
+				},
+				"tags": [
+					"Tags"
+				],
+				"security": [
+					{
+						"cookieAuth": []
+					}
+				],
+				"parameters": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/CreateTagBodyDTO"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/tags/{id}": {
+			"patch": {
+				"operationId": "Patch",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/TagAdminDTO"
+								}
+							}
+						}
+					}
+				},
+				"tags": [
+					"Tags"
+				],
+				"security": [
+					{
+						"cookieAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/PatchTagBodyDTO"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/tags/{id}/aliases": {
+			"get": {
+				"operationId": "ListTagAliases",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/TagAliasesListResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"tags": [
+					"Tags"
+				],
+				"security": [
+					{
+						"cookieAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				]
+			},
+			"post": {
+				"operationId": "CreateTagAlias",
+				"responses": {
+					"201": {
+						"description": "Created",
+						"content": {
+							"application/json": {
+								"schema": {}
+							}
+						}
+					}
+				},
+				"tags": [
+					"Tags"
+				],
+				"security": [
+					{
+						"cookieAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/CreateAliasBodyDTO"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/tags/aliases/{id}": {
+			"delete": {
+				"operationId": "DeleteTagAlias",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/OkDTO"
+								}
+							}
+						}
+					}
+				},
+				"tags": [
+					"Tags"
+				],
+				"security": [
+					{
+						"cookieAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				]
+			}
+		},
+		"/media/{id}/tags": {
+			"post": {
+				"operationId": "SetTags",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/OkDTO"
+								}
+							}
+						}
+					}
+				},
+				"tags": [
+					"Tags"
+				],
+				"security": [
+					{
+						"cookieAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/TagNamesBodyDTO"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/media/{id}/tags/add": {
+			"post": {
+				"operationId": "AddTags",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/OkDTO"
+								}
+							}
+						}
+					}
+				},
+				"tags": [
+					"Tags"
+				],
+				"security": [
+					{
+						"cookieAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/TagNamesBodyDTO"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/media/{id}/tags/remove": {
+			"post": {
+				"operationId": "RemoveTags",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/OkDTO"
+								}
+							}
+						}
+					}
+				},
+				"tags": [
+					"Tags"
+				],
+				"security": [
+					{
+						"cookieAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/TagNamesBodyDTO"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/search": {
+			"get": {
+				"operationId": "Search",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/SearchResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "GET /search\npublic, viewer-aware",
+				"tags": [
+					"Search"
+				],
+				"security": [
+					{
+						"optionalCookieAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"in": "query",
+						"name": "q",
+						"required": false,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
+						"name": "limit",
+						"required": false,
+						"schema": {
+							"format": "double",
+							"type": "number"
+						}
+					},
+					{
+						"in": "query",
+						"name": "cursor",
+						"required": false,
+						"schema": {
+							"type": "string"
+						}
+					}
+				]
+			}
+		},
+		"/media/{id}/rating": {
+			"post": {
+				"operationId": "RateMedia",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/RateMediaResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "POST /media/:id/rating",
+				"tags": [
+					"Ratings"
+				],
+				"security": [
+					{
+						"cookieAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/SetRatingBodyDTO"
+							}
+						}
+					}
+				}
+			},
+			"delete": {
+				"operationId": "UnrateMedia",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/RateMediaResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "DELETE /media/:id/rating",
+				"tags": [
+					"Ratings"
+				],
+				"security": [
+					{
+						"cookieAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				]
+			}
+		},
 		"/media/{id}": {
 			"get": {
 				"operationId": "GetMedia",
@@ -732,6 +1810,76 @@
 					}
 				],
 				"parameters": []
+			}
+		},
+		"/media/{id}/favorite": {
+			"post": {
+				"operationId": "Favorite",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/OkDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "POST /media/:id/favorite",
+				"tags": [
+					"Favorites"
+				],
+				"security": [
+					{
+						"cookieAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				]
+			},
+			"delete": {
+				"operationId": "Unfavorite",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/OkDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "DELETE /media/:id/favorite",
+				"tags": [
+					"Favorites"
+				],
+				"security": [
+					{
+						"cookieAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				]
 			}
 		},
 		"/media/{id}/comments": {

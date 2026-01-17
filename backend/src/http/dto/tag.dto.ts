@@ -31,6 +31,38 @@ export type TagAdminDTO = TagSearchDTO & {
     isExplicit: boolean;
 };
 
+export type TagNamesBodyDTO = {
+    tags: string[];
+};
+
+export type CreateTagBodyDTO = {
+    name: string;
+    categoryId: string;
+};
+
+export type PatchTagBodyDTO = {
+    customColor?: string | null;
+    isExplicit?: boolean;
+};
+
+export type CreateAliasBodyDTO = {
+    alias: string;
+};
+
+export type TagSuggestListResponseDTO = {
+    data: TagSuggestDTO[];
+};
+
+export type TagSearchListResponseDTO = {
+    data: TagSearchDTO[];
+};
+
+export type TagAdminResponseDTO = TagAdminDTO;
+
+export type TagAliasesListResponseDTO = {
+    data: any[];
+};
+
 export function toTagPublicDTO(t: any): TagPublicDTO {
     return {
         id: t.id,
