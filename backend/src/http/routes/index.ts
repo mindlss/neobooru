@@ -12,6 +12,7 @@ import { reportsRouter } from './reports.route';
 import { jobsRouter } from './jobs.route';
 import { comicsRouter } from './comics.route';
 import { searchRouter } from './search.route';
+import { docsRouter } from './docs.route';
 
 export const apiRouter = Router();
 
@@ -28,3 +29,4 @@ apiRouter.use(reportsRouter);
 apiRouter.use(jobsRouter);
 apiRouter.use(comicsRouter);
 apiRouter.use(searchRouter);
+apiRouter.use(docsRouter);
