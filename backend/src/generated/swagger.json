@@ -1011,6 +1011,254 @@
 				],
 				"type": "object"
 			},
+			"CreateReportResponseDTO": {
+				"properties": {
+					"status": {
+						"type": "string",
+						"enum": [
+							"ok"
+						],
+						"nullable": false
+					}
+				},
+				"required": [
+					"status"
+				],
+				"type": "object"
+			},
+			"CreateReportBodyDTO": {
+				"properties": {
+					"description": {
+						"type": "string"
+					},
+					"reason": {
+						"type": "string"
+					},
+					"targetId": {
+						"type": "string"
+					},
+					"type": {
+						"type": "string",
+						"enum": [
+							"media",
+							"comment"
+						]
+					}
+				},
+				"required": [
+					"reason",
+					"targetId",
+					"type"
+				],
+				"type": "object"
+			},
+			"AdminReportDTO": {
+				"properties": {
+					"resolvedByUsername": {
+						"type": "string",
+						"nullable": true
+					},
+					"resolvedById": {
+						"type": "string",
+						"nullable": true
+					},
+					"assignedToUsername": {
+						"type": "string",
+						"nullable": true
+					},
+					"assignedToId": {
+						"type": "string",
+						"nullable": true
+					},
+					"reportedByUsername": {
+						"type": "string"
+					},
+					"reportedById": {
+						"type": "string"
+					},
+					"updatedAt": {
+						"type": "string"
+					},
+					"createdAt": {
+						"type": "string"
+					},
+					"status": {
+						"type": "string"
+					},
+					"description": {
+						"type": "string",
+						"nullable": true
+					},
+					"reason": {
+						"type": "string"
+					},
+					"targetId": {
+						"type": "string"
+					},
+					"type": {
+						"type": "string"
+					},
+					"id": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"resolvedByUsername",
+					"resolvedById",
+					"assignedToUsername",
+					"assignedToId",
+					"reportedByUsername",
+					"reportedById",
+					"updatedAt",
+					"createdAt",
+					"status",
+					"description",
+					"reason",
+					"targetId",
+					"type",
+					"id"
+				],
+				"type": "object"
+			},
+			"AdminReportsListResponseDTO": {
+				"properties": {
+					"nextCursor": {
+						"type": "string",
+						"nullable": true
+					},
+					"data": {
+						"items": {
+							"$ref": "#/components/schemas/AdminReportDTO"
+						},
+						"type": "array"
+					}
+				},
+				"required": [
+					"nextCursor",
+					"data"
+				],
+				"type": "object"
+			},
+			"AdminReportTargetDTO": {
+				"properties": {
+					"lastReportedAt": {
+						"type": "string"
+					},
+					"firstReportedAt": {
+						"type": "string"
+					},
+					"reportCount": {
+						"type": "number",
+						"format": "double"
+					},
+					"targetId": {
+						"type": "string"
+					},
+					"type": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"lastReportedAt",
+					"firstReportedAt",
+					"reportCount",
+					"targetId",
+					"type"
+				],
+				"type": "object"
+			},
+			"AdminReportTargetsResponseDTO": {
+				"properties": {
+					"totalPages": {
+						"type": "number",
+						"format": "double"
+					},
+					"totalTargets": {
+						"type": "number",
+						"format": "double"
+					},
+					"limit": {
+						"type": "number",
+						"format": "double"
+					},
+					"page": {
+						"type": "number",
+						"format": "double"
+					},
+					"data": {
+						"items": {
+							"$ref": "#/components/schemas/AdminReportTargetDTO"
+						},
+						"type": "array"
+					}
+				},
+				"required": [
+					"totalPages",
+					"totalTargets",
+					"limit",
+					"page",
+					"data"
+				],
+				"type": "object"
+			},
+			"AdminReportPatchResponseDTO": {
+				"properties": {
+					"updatedAt": {
+						"type": "string"
+					},
+					"resolvedById": {
+						"type": "string",
+						"nullable": true
+					},
+					"assignedToId": {
+						"type": "string",
+						"nullable": true
+					},
+					"reportStatus": {
+						"type": "string"
+					},
+					"id": {
+						"type": "string"
+					},
+					"status": {
+						"type": "string",
+						"enum": [
+							"ok"
+						],
+						"nullable": false
+					}
+				},
+				"required": [
+					"updatedAt",
+					"resolvedById",
+					"assignedToId",
+					"reportStatus",
+					"id",
+					"status"
+				],
+				"type": "object"
+			},
+			"AdminReportPatchBodyDTO": {
+				"properties": {
+					"assignedToId": {
+						"type": "string",
+						"nullable": true
+					},
+					"status": {
+						"type": "string",
+						"enum": [
+							"pending",
+							"reviewing",
+							"resolved",
+							"rejected"
+						]
+					}
+				},
+				"required": [
+					"status"
+				],
+				"type": "object"
+			},
 			"RatingResultDTO": {
 				"properties": {
 					"myRating": {
@@ -1066,6 +1314,106 @@
 				"required": [
 					"value"
 				],
+				"type": "object"
+			},
+			"ModerationQueueItemDTO": {
+				"properties": {
+					"moderationStatus": {
+						"type": "string",
+						"enum": [
+							"PENDING",
+							"APPROVED",
+							"REJECTED"
+						]
+					},
+					"isExplicit": {
+						"type": "boolean"
+					},
+					"createdAt": {
+						"type": "string"
+					},
+					"size": {
+						"type": "number",
+						"format": "double"
+					},
+					"contentType": {
+						"type": "string"
+					},
+					"type": {
+						"type": "string",
+						"enum": [
+							"IMAGE",
+							"VIDEO"
+						]
+					},
+					"id": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"moderationStatus",
+					"isExplicit",
+					"createdAt",
+					"size",
+					"contentType",
+					"type",
+					"id"
+				],
+				"type": "object"
+			},
+			"ModerationQueueResponseDTO": {
+				"properties": {
+					"nextCursor": {
+						"type": "string",
+						"nullable": true
+					},
+					"data": {
+						"items": {
+							"$ref": "#/components/schemas/ModerationQueueItemDTO"
+						},
+						"type": "array"
+					}
+				},
+				"required": [
+					"nextCursor",
+					"data"
+				],
+				"type": "object"
+			},
+			"ModerationActionResponseDTO": {
+				"properties": {
+					"moderationStatus": {
+						"type": "string",
+						"enum": [
+							"PENDING",
+							"APPROVED",
+							"REJECTED"
+						]
+					},
+					"mediaId": {
+						"type": "string"
+					},
+					"status": {
+						"type": "string",
+						"enum": [
+							"ok"
+						],
+						"nullable": false
+					}
+				},
+				"required": [
+					"moderationStatus",
+					"mediaId",
+					"status"
+				],
+				"type": "object"
+			},
+			"ModerationActionBodyDTO": {
+				"properties": {
+					"notes": {
+						"type": "string"
+					}
+				},
 				"type": "object"
 			},
 			"MediaListResponseDTO": {
@@ -2154,6 +2502,258 @@
 				]
 			}
 		},
+		"/reports": {
+			"post": {
+				"operationId": "Create",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/CreateReportResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "POST /reports\nauth required + not banned + restriction checks",
+				"tags": [
+					"Reports"
+				],
+				"security": [
+					{
+						"cookieAuth": []
+					}
+				],
+				"parameters": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/CreateReportBodyDTO"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/admin/reports": {
+			"get": {
+				"operationId": "AdminList",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/AdminReportsListResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "GET /admin/reports\nModerator/Admin only",
+				"tags": [
+					"Reports"
+				],
+				"security": [
+					{
+						"cookieAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"in": "query",
+						"name": "limit",
+						"required": false,
+						"schema": {
+							"format": "double",
+							"type": "number"
+						}
+					},
+					{
+						"in": "query",
+						"name": "cursor",
+						"required": false,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
+						"name": "status",
+						"required": false,
+						"schema": {
+							"type": "string",
+							"enum": [
+								"pending",
+								"reviewing",
+								"resolved",
+								"rejected"
+							]
+						}
+					},
+					{
+						"in": "query",
+						"name": "type",
+						"required": false,
+						"schema": {
+							"type": "string",
+							"enum": [
+								"media",
+								"comment"
+							]
+						}
+					},
+					{
+						"in": "query",
+						"name": "order",
+						"required": false,
+						"schema": {
+							"type": "string",
+							"enum": [
+								"old",
+								"new"
+							]
+						}
+					}
+				]
+			}
+		},
+		"/admin/reports/targets": {
+			"get": {
+				"operationId": "AdminTargets",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/AdminReportTargetsResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "GET /admin/reports/targets\nModerator/Admin only",
+				"tags": [
+					"Reports"
+				],
+				"security": [
+					{
+						"cookieAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"in": "query",
+						"name": "limit",
+						"required": false,
+						"schema": {
+							"format": "double",
+							"type": "number"
+						}
+					},
+					{
+						"in": "query",
+						"name": "page",
+						"required": false,
+						"schema": {
+							"format": "double",
+							"type": "number"
+						}
+					},
+					{
+						"in": "query",
+						"name": "type",
+						"required": false,
+						"schema": {
+							"type": "string",
+							"enum": [
+								"media",
+								"comment"
+							]
+						}
+					},
+					{
+						"in": "query",
+						"name": "status",
+						"required": false,
+						"schema": {
+							"type": "string",
+							"enum": [
+								"pending",
+								"reviewing",
+								"resolved",
+								"rejected"
+							]
+						}
+					},
+					{
+						"in": "query",
+						"name": "order",
+						"required": false,
+						"schema": {
+							"type": "string",
+							"enum": [
+								"count_desc",
+								"count_asc",
+								"oldest_first",
+								"newest_first"
+							]
+						}
+					}
+				]
+			}
+		},
+		"/admin/reports/{id}": {
+			"patch": {
+				"operationId": "AdminPatch",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/AdminReportPatchResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "PATCH /admin/reports/:id\nModerator/Admin only",
+				"tags": [
+					"Reports"
+				],
+				"security": [
+					{
+						"cookieAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/AdminReportPatchBodyDTO"
+							}
+						}
+					}
+				}
+			}
+		},
 		"/media/{id}/rating": {
 			"post": {
 				"operationId": "RateMedia",
@@ -2232,6 +2832,143 @@
 						}
 					}
 				]
+			}
+		},
+		"/moderation/queue": {
+			"get": {
+				"operationId": "GetQueue",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ModerationQueueResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "GET /moderation/queue\nModerator/Admin only",
+				"tags": [
+					"Moderation"
+				],
+				"security": [
+					{
+						"cookieAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"in": "query",
+						"name": "limit",
+						"required": false,
+						"schema": {
+							"format": "double",
+							"type": "number"
+						}
+					},
+					{
+						"in": "query",
+						"name": "cursor",
+						"required": false,
+						"schema": {
+							"type": "string"
+						}
+					}
+				]
+			}
+		},
+		"/moderation/media/{id}/approve": {
+			"post": {
+				"operationId": "Approve",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ModerationActionResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "POST /moderation/media/:id/approve\nModerator/Admin only",
+				"tags": [
+					"Moderation"
+				],
+				"security": [
+					{
+						"cookieAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/ModerationActionBodyDTO"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/moderation/media/{id}/reject": {
+			"post": {
+				"operationId": "Reject",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ModerationActionResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "POST /moderation/media/:id/reject\nModerator/Admin only",
+				"tags": [
+					"Moderation"
+				],
+				"security": [
+					{
+						"cookieAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/ModerationActionBodyDTO"
+							}
+						}
+					}
+				}
 			}
 		},
 		"/media/{id}": {

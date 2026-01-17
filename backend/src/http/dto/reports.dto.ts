@@ -1,3 +1,15 @@
+export type CreateReportBodyDTO = {
+    type: 'media' | 'comment';
+    targetId: string; // uuid
+    reason: string;
+    description?: string;
+};
+
+export type AdminReportPatchBodyDTO = {
+    status: 'pending' | 'reviewing' | 'resolved' | 'rejected';
+    assignedToId?: string | null;
+};
+
 export type AdminReportDTO = {
     id: string;
     type: string;
@@ -59,3 +71,29 @@ export function toAdminReportTargetDTO(r: any): AdminReportTargetDTO {
         lastReportedAt: new Date(r.lastReportedAt).toISOString(),
     };
 }
+
+export type AdminReportsListResponseDTO = {
+    data: AdminReportDTO[];
+    nextCursor: string | null;
+};
+
+export type AdminReportTargetsResponseDTO = {
+    data: AdminReportTargetDTO[];
+    page: number;
+    limit: number;
+    totalTargets: number;
+    totalPages: number;
+};
+
+export type CreateReportResponseDTO = {
+    status: 'ok';
+};
+
+export type AdminReportPatchResponseDTO = {
+    status: 'ok';
+    id: string;
+    reportStatus: string;
+    assignedToId: string | null;
+    resolvedById: string | null;
+    updatedAt: string;
+};

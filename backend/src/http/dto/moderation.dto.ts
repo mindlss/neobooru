@@ -19,3 +19,18 @@ export function toModerationQueueItemDTO(m: any): ModerationQueueItemDTO {
         moderationStatus: m.moderationStatus,
     };
 }
+
+export type ModerationQueueResponseDTO = {
+    data: ModerationQueueItemDTO[];
+    nextCursor: string | null;
+};
+
+export type ModerationActionBodyDTO = {
+    notes?: string;
+};
+
+export type ModerationActionResponseDTO = {
+    status: 'ok';
+    mediaId: string;
+    moderationStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
+};
