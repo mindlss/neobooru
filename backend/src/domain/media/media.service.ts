@@ -215,3 +215,80 @@ export async function listMediaVisible(params: {
 
     return { data: withUrls, nextCursor };
 }
+
+export type MediaBlockedReason =
+    | 'NOT_FOUND'
+    | 'DELETED'
+    | 'REJECTED'
+    | 'PENDING'
+    | 'EXPLICIT';
+
+export async function getMediaByIdOrBlocked(
+    id: string,
+    viewer: Viewer
+): Promise<
+    | { kind: 'ok'; media: Awaited<ReturnType<typeof getMediaByIdVisible>> }
+    | { kind: 'blocked'; reason: MediaBlockedReason }
+> {
+    const media = await prisma.media.findUnique({
+        where: { id },
+        include: {
+            tagLinks: {
+                include: {
+                    tag: {
+                        include: {
+                            category: true,
+                        },
+                    },
+                },
+                orderBy: { addedAt: 'asc' },
+            },
+            ...(buildFavoriteInclude(viewer) as any),
+            ...(buildMyRatingInclude(viewer) as any),
+        },
+    });
+
+    if (!media) return { kind: 'blocked', reason: 'NOT_FOUND' };
+
+    if (isModerator(viewer)) {
+        const dto = mapMedia(media, viewer);
+        const originalUrl = await presign(media.originalKey);
+        const previewUrl = media.previewKey
+            ? await presign(media.previewKey)
+            : null;
+        return {
+            kind: 'ok',
+            media: { ...dto, originalUrl, previewUrl } as any,
+        };
+    }
+
+    if (media.deletedAt) return { kind: 'blocked', reason: 'DELETED' };
+
+    if (isGuest(viewer)) {
+        if (media.moderationStatus !== ModerationStatus.APPROVED) {
+            return {
+                kind: 'blocked',
+                reason:
+                    media.moderationStatus === ModerationStatus.PENDING
+                        ? 'PENDING'
+                        : 'REJECTED',
+            };
+        }
+        if (media.isExplicit) return { kind: 'blocked', reason: 'EXPLICIT' };
+    } else {
+        if (media.moderationStatus === ModerationStatus.REJECTED) {
+            return { kind: 'blocked', reason: 'REJECTED' };
+        }
+        if (!viewer?.isAdult && media.isExplicit) {
+            return { kind: 'blocked', reason: 'EXPLICIT' };
+        }
+    }
+
+    const dto = mapMedia(media, viewer);
+    const originalUrl = await presign(media.originalKey);
+    const previewUrl = media.previewKey
+        ? await presign(media.previewKey)
+        : null;
+
+    return { kind: 'ok', media: { ...dto, originalUrl, previewUrl } as any };
+}

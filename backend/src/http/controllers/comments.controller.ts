@@ -32,6 +32,7 @@ import {
 
 import { toCommentDTO, type CommentDTO } from '../dto/comment.dto';
 import type { OkDTO } from '../dto/common.dto';
+import { requireAdult } from '../tsoa/guards';
 
 // -------------------- Swagger DTOs --------------------
 
@@ -70,9 +71,7 @@ export class CommentsController extends Controller {
         // guest | user
         await ensureViewer(req);
 
-        if (!req.viewer?.isAdult) {
-            throw apiError(403, 'COMMENTS_ADULTS_ONLY', 'Comments are 18+');
-        }
+        requireAdult(req.viewer, 'COMMENTS_ADULTS_ONLY');
 
         const params = mediaIdParamsSchema.parse({ id });
         const q = commentsListQuerySchema.parse({ limit, cursor, sort });
@@ -115,9 +114,7 @@ export class CommentsController extends Controller {
         // guarantees currentUser + viewer
         await requireCurrentUser(req);
 
-        if (!req.viewer?.isAdult) {
-            throw apiError(403, 'COMMENT_UNDERAGE', 'Comments are 18+');
-        }
+        requireAdult(req.viewer, 'COMMENTS_ADULTS_ONLY');
 
         const params = mediaIdParamsSchema.parse({ id });
         const parsedBody = createCommentSchema.parse(body);
@@ -161,9 +158,7 @@ export class CommentsController extends Controller {
     ): Promise<OkDTO> {
         await requireCurrentUser(req);
 
-        if (!req.viewer?.isAdult) {
-            throw apiError(403, 'COMMENTS_ADULTS_ONLY', 'Comments are 18+');
-        }
+        requireAdult(req.viewer, 'COMMENTS_ADULTS_ONLY');
 
         const parsedBody = deleteCommentSchema.parse(body ?? {});
         const commentId = String(id || '');

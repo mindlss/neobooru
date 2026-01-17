@@ -7,6 +7,277 @@
 		"requestBodies": {},
 		"responses": {},
 		"schemas": {
+			"TagPublicDTO": {
+				"properties": {
+					"addedAt": {
+						"type": "string"
+					},
+					"color": {
+						"type": "string"
+					},
+					"name": {
+						"type": "string"
+					},
+					"id": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"color",
+					"name",
+					"id"
+				],
+				"type": "object"
+			},
+			"MediaPublicDTO": {
+				"properties": {
+					"commentCount": {
+						"type": "number",
+						"format": "double"
+					},
+					"myRating": {
+						"type": "number",
+						"format": "double",
+						"nullable": true
+					},
+					"ratingCount": {
+						"type": "number",
+						"format": "double"
+					},
+					"ratingAvg": {
+						"type": "number",
+						"format": "double"
+					},
+					"favorite": {
+						"type": "boolean"
+					},
+					"tags": {
+						"items": {
+							"$ref": "#/components/schemas/TagPublicDTO"
+						},
+						"type": "array"
+					},
+					"previewUrl": {
+						"type": "string",
+						"nullable": true
+					},
+					"createdAt": {
+						"type": "string"
+					},
+					"isExplicit": {
+						"type": "boolean"
+					},
+					"description": {
+						"type": "string",
+						"nullable": true
+					},
+					"duration": {
+						"type": "number",
+						"format": "double",
+						"nullable": true
+					},
+					"height": {
+						"type": "number",
+						"format": "double",
+						"nullable": true
+					},
+					"width": {
+						"type": "number",
+						"format": "double",
+						"nullable": true
+					},
+					"size": {
+						"type": "number",
+						"format": "double"
+					},
+					"contentType": {
+						"type": "string"
+					},
+					"type": {
+						"type": "string",
+						"enum": [
+							"IMAGE",
+							"VIDEO"
+						]
+					},
+					"id": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"commentCount",
+					"myRating",
+					"ratingCount",
+					"ratingAvg",
+					"favorite",
+					"tags",
+					"previewUrl",
+					"createdAt",
+					"isExplicit",
+					"description",
+					"duration",
+					"height",
+					"width",
+					"size",
+					"contentType",
+					"type",
+					"id"
+				],
+				"type": "object"
+			},
+			"MediaUserDTO": {
+				"allOf": [
+					{
+						"$ref": "#/components/schemas/MediaPublicDTO"
+					},
+					{
+						"properties": {
+							"originalUrl": {
+								"type": "string",
+								"nullable": true
+							}
+						},
+						"required": [
+							"originalUrl"
+						],
+						"type": "object"
+					}
+				]
+			},
+			"MediaModeratorDTO": {
+				"allOf": [
+					{
+						"$ref": "#/components/schemas/MediaUserDTO"
+					},
+					{
+						"properties": {
+							"previewKey": {
+								"type": "string",
+								"nullable": true
+							},
+							"originalKey": {
+								"type": "string"
+							},
+							"deletedBy": {
+								"type": "string",
+								"nullable": true
+							},
+							"deletedAt": {
+								"type": "string",
+								"nullable": true
+							},
+							"moderationNotes": {
+								"type": "string",
+								"nullable": true
+							},
+							"moderatedById": {
+								"type": "string",
+								"nullable": true
+							},
+							"moderatedAt": {
+								"type": "string",
+								"nullable": true
+							},
+							"moderationStatus": {
+								"type": "string",
+								"enum": [
+									"PENDING",
+									"APPROVED",
+									"REJECTED"
+								]
+							},
+							"hash": {
+								"type": "string"
+							}
+						},
+						"required": [
+							"previewKey",
+							"originalKey",
+							"deletedBy",
+							"deletedAt",
+							"moderationNotes",
+							"moderatedById",
+							"moderatedAt",
+							"moderationStatus",
+							"hash"
+						],
+						"type": "object"
+					}
+				]
+			},
+			"MediaVisibleDTO": {
+				"anyOf": [
+					{
+						"$ref": "#/components/schemas/MediaPublicDTO"
+					},
+					{
+						"$ref": "#/components/schemas/MediaUserDTO"
+					},
+					{
+						"$ref": "#/components/schemas/MediaModeratorDTO"
+					}
+				]
+			},
+			"MediaListResponseDTO": {
+				"properties": {
+					"nextCursor": {
+						"type": "string",
+						"nullable": true
+					},
+					"data": {
+						"items": {
+							"$ref": "#/components/schemas/MediaVisibleDTO"
+						},
+						"type": "array"
+					}
+				},
+				"required": [
+					"nextCursor",
+					"data"
+				],
+				"type": "object"
+			},
+			"MediaUploadDTO": {
+				"properties": {
+					"createdAt": {
+						"type": "string"
+					},
+					"moderationStatus": {
+						"type": "string",
+						"enum": [
+							"PENDING",
+							"APPROVED",
+							"REJECTED"
+						]
+					},
+					"size": {
+						"type": "number",
+						"format": "double"
+					},
+					"contentType": {
+						"type": "string"
+					},
+					"type": {
+						"type": "string",
+						"enum": [
+							"IMAGE",
+							"VIDEO"
+						]
+					},
+					"id": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"createdAt",
+					"moderationStatus",
+					"size",
+					"contentType",
+					"type",
+					"id"
+				],
+				"type": "object"
+			},
 			"_36_Enums.CommentDeletedKind": {
 				"type": "string",
 				"enum": [
@@ -339,6 +610,130 @@
 		"contact": {}
 	},
 	"paths": {
+		"/media/{id}": {
+			"get": {
+				"operationId": "GetMedia",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/MediaVisibleDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "GET /media/:id\npublic, viewer-aware",
+				"tags": [
+					"Media"
+				],
+				"security": [
+					{
+						"optionalCookieAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				]
+			}
+		},
+		"/media": {
+			"get": {
+				"operationId": "ListMedia",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/MediaListResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "GET /media\npublic, viewer-aware",
+				"tags": [
+					"Media"
+				],
+				"security": [
+					{
+						"optionalCookieAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"in": "query",
+						"name": "limit",
+						"required": false,
+						"schema": {
+							"format": "double",
+							"type": "number"
+						}
+					},
+					{
+						"in": "query",
+						"name": "cursor",
+						"required": false,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
+						"name": "sort",
+						"required": false,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
+						"name": "type",
+						"required": false,
+						"schema": {
+							"type": "string"
+						}
+					}
+				]
+			}
+		},
+		"/media/upload": {
+			"post": {
+				"operationId": "UploadMedia",
+				"responses": {
+					"201": {
+						"description": "Created",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/MediaUploadDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "POST /media/upload\nauth required, role restricted, ban + restriction checks\n\nNOTE: multipart parsing is implemented by parseMultipartToTemp(req).\nSwagger multipart form can be added later via tsoa+multer config.",
+				"tags": [
+					"Media"
+				],
+				"security": [
+					{
+						"cookieAuth": []
+					}
+				],
+				"parameters": []
+			}
+		},
 		"/media/{id}/comments": {
 			"get": {
 				"operationId": "ListComments",
