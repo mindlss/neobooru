@@ -3,6 +3,13 @@ import { toTagPublicDTO, type TagPublicDTO } from './tag.dto';
 
 type Viewer = { role: UserRole } | undefined;
 
+export type MediaVisibleDTO = MediaPublicDTO | MediaUserDTO | MediaModeratorDTO;
+
+export type MediaListResponseDTO = {
+    data: MediaVisibleDTO[];
+    nextCursor: string | null;
+};
+
 export type MediaPublicDTO = {
     id: string;
     type: 'IMAGE' | 'VIDEO';
@@ -50,7 +57,7 @@ export type MediaModeratorDTO = MediaUserDTO & {
 
 export function toMediaDTO(
     media: any,
-    viewer: Viewer
+    viewer: Viewer,
 ): MediaPublicDTO | MediaUserDTO | MediaModeratorDTO {
     const base: MediaPublicDTO = {
         id: media.id,
@@ -73,7 +80,7 @@ export function toMediaDTO(
                 name: t.name,
                 color: t.color,
                 addedAt: t.addedAt,
-            })
+            }),
         ),
 
         favorite: !!media.favorite,

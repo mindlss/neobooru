@@ -40,7 +40,7 @@ async function presign(key: string) {
     return minio.presignedGetObject(
         env.MINIO_BUCKET,
         key,
-        env.MINIO_PRESIGN_EXPIRES
+        env.MINIO_PRESIGN_EXPIRES,
     );
 }
 
@@ -168,7 +168,7 @@ export async function listUserUploads(params: {
         data.map(async (m) => ({
             ...m,
             previewUrl: m.previewKey ? await presign(m.previewKey) : null,
-        }))
+        })),
     );
 
     return { kind: 'ok' as const, data: withUrls, nextCursor };
@@ -234,7 +234,127 @@ export async function listUserFavorites(params: {
         mediaRows.map(async (m) => ({
             ...m,
             previewUrl: m.previewKey ? await presign(m.previewKey) : null,
-        }))
+        })),
+    );
+
+    return { kind: 'ok' as const, data: withUrls, nextCursor };
+}
+
+export async function listUserComments(params: {
+    userId: string;
+    viewer: Viewer;
+    limit: number;
+    cursor?: string;
+    sort: 'new' | 'old';
+}) {
+    const target = await getTargetUserForSection(params.userId, params.viewer);
+    if (!target) return { kind: 'not_found' as const };
+
+    if (
+        !target.showComments &&
+        !isModerator(params.viewer) &&
+        !isOwner(params.viewer, params.userId)
+    ) {
+        return { kind: 'private' as const };
+    }
+
+    const take = Math.min(Math.max(params.limit, 1), 100);
+
+    const orderBy =
+        params.sort === 'old'
+            ? [{ createdAt: 'asc' as const }, { id: 'asc' as const }]
+            : [{ createdAt: 'desc' as const }, { id: 'desc' as const }];
+
+    const items = await prisma.comment.findMany({
+        where: {
+            userId: params.userId,
+            media: buildVisibilityWhere(params.viewer) as any,
+        },
+        orderBy: orderBy as any,
+        take: take + 1,
+        ...(params.cursor ? { cursor: { id: params.cursor }, skip: 1 } : {}),
+        include: {
+            user: { select: { id: true, username: true, role: true } },
+        },
+    });
+
+    const nextCursor = items.length > take ? items[take].id : null;
+
+    return {
+        kind: 'ok' as const,
+        data: items.slice(0, take),
+        nextCursor,
+    };
+}
+
+export async function listUserRatings(params: {
+    userId: string;
+    viewer: Viewer;
+    limit: number;
+    cursor?: string;
+    sort: 'new' | 'old';
+    type?: 'IMAGE' | 'VIDEO';
+}) {
+    const target = await getTargetUserForSection(params.userId, params.viewer);
+    if (!target) return { kind: 'not_found' as const };
+
+    if (
+        !target.showRatings &&
+        !isModerator(params.viewer) &&
+        !isOwner(params.viewer, params.userId)
+    ) {
+        return { kind: 'private' as const };
+    }
+
+    const take = Math.min(Math.max(params.limit, 1), 100);
+
+    const mediaVisibility = buildVisibilityWhere(params.viewer);
+
+    const orderBy =
+        params.sort === 'old'
+            ? [{ createdAt: 'asc' as const }, { id: 'asc' as const }]
+            : [{ createdAt: 'desc' as const }, { id: 'desc' as const }];
+
+    const rows = await prisma.rating.findMany({
+        where: {
+            userId: params.userId,
+            media: {
+                ...mediaVisibility,
+                ...(params.type ? { type: params.type } : {}),
+            } as any,
+        },
+        orderBy: orderBy as any,
+        take: take + 1,
+        ...(params.cursor ? { cursor: { id: params.cursor }, skip: 1 } : {}),
+        include: {
+            media: {
+                include: {
+                    tagLinks: {
+                        include: { tag: { include: { category: true } } },
+                        orderBy: { addedAt: 'asc' },
+                    },
+                },
+            },
+        },
+    });
+
+    const nextCursor = rows.length > take ? rows[take].id : null;
+
+    const mapped = rows.slice(0, take).map((r: any) => ({
+        value: r.value,
+        media: mapMedia(r.media, params.viewer),
+    }));
+
+    const withUrls = await Promise.all(
+        mapped.map(async (x) => ({
+            ...x,
+            media: {
+                ...x.media,
+                previewUrl: x.media.previewKey
+                    ? await presign(x.media.previewKey)
+                    : null,
+            },
+        })),
     );
 
     return { kind: 'ok' as const, data: withUrls, nextCursor };

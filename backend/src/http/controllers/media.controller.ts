@@ -36,6 +36,8 @@ import {
     type MediaUserDTO,
     type MediaModeratorDTO,
     type MediaUploadDTO,
+    MediaVisibleDTO,
+    MediaListResponseDTO,
 } from '../dto/media.dto';
 
 import {
@@ -43,15 +45,6 @@ import {
     requireRole,
     requireNoActiveRestriction,
 } from '../tsoa/guards';
-
-// -------------------- Swagger DTOs --------------------
-
-type MediaVisibleDTO = MediaPublicDTO | MediaUserDTO | MediaModeratorDTO;
-
-type MediaListResponseDTO = {
-    data: MediaVisibleDTO[];
-    nextCursor: string | null;
-};
 
 // -------------------- Controller --------------------
 
@@ -66,7 +59,7 @@ export class MediaController extends Controller {
     @Security('optionalCookieAuth')
     public async getMedia(
         @Path() id: string,
-        @Request() req: ExpressRequest
+        @Request() req: ExpressRequest,
     ): Promise<MediaVisibleDTO> {
         await ensureViewer(req);
 
@@ -75,7 +68,7 @@ export class MediaController extends Controller {
         if (result.kind === 'ok') {
             return toMediaDTO(
                 result.media!,
-                req.viewer ? { role: req.viewer.role } : undefined
+                req.viewer ? { role: req.viewer.role } : undefined,
             ) as MediaVisibleDTO;
         }
 
@@ -90,7 +83,7 @@ export class MediaController extends Controller {
                 throw apiError(
                     403,
                     'NOT_AVAILABLE',
-                    'Media is not available yet'
+                    'Media is not available yet',
                 );
 
             case 'REJECTED':
@@ -112,7 +105,7 @@ export class MediaController extends Controller {
         @Query() limit?: number,
         @Query() cursor?: string,
         @Query() sort?: string,
-        @Query() type?: string
+        @Query() type?: string,
     ): Promise<MediaListResponseDTO> {
         await ensureViewer(req);
 
@@ -130,8 +123,8 @@ export class MediaController extends Controller {
             data: result.data.map((m) =>
                 toMediaDTO(
                     m,
-                    req.viewer ? { role: req.viewer.role } : undefined
-                )
+                    req.viewer ? { role: req.viewer.role } : undefined,
+                ),
             ) as MediaVisibleDTO[],
             nextCursor: result.nextCursor,
         };
@@ -148,7 +141,7 @@ export class MediaController extends Controller {
     @Security('cookieAuth')
     @SuccessResponse(201, 'Created')
     public async uploadMedia(
-        @Request() req: ExpressRequest
+        @Request() req: ExpressRequest,
     ): Promise<MediaUploadDTO> {
         // loads req.currentUser + req.viewer (and throws 401 if missing)
         await requireCurrentUser(req);
@@ -211,14 +204,14 @@ export class MediaController extends Controller {
                 throw apiError(
                     415,
                     'UNSUPPORTED_MEDIA_TYPE',
-                    'unsupported media type'
+                    'unsupported media type',
                 );
             }
 
             throw apiError(
                 500,
                 'INTERNAL_SERVER_ERROR',
-                'Something went wrong'
+                'Something went wrong',
             );
         }
     }

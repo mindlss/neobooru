@@ -1,5 +1,13 @@
 import { UserRole } from '@prisma/client';
 
+import type {
+    MediaPublicDTO,
+    MediaUserDTO,
+    MediaModeratorDTO,
+    MediaVisibleDTO,
+} from './media.dto';
+import { CommentDTO } from './comment.dto';
+
 export type UserPublicDTO = {
     id: string;
     username: string;
@@ -81,3 +89,46 @@ export function toUserSelfDTO(u: any): UserSelfDTO {
         isBanned: !!u.isBanned,
     };
 }
+
+export type PatchMeBodyDTO = {
+    bio?: string | null;
+    website?: string | null;
+
+    showComments?: boolean;
+    showRatings?: boolean;
+    showFavorites?: boolean;
+    showUploads?: boolean;
+};
+
+export type UserPublicResponseDTO = UserPublicDTO;
+export type UserSelfResponseDTO = UserSelfDTO;
+
+export type UserMediaVisibleDTO =
+    | MediaPublicDTO
+    | MediaUserDTO
+    | MediaModeratorDTO;
+
+export type UserMediaPageResponseDTO = {
+    data: UserMediaVisibleDTO[];
+    nextCursor: string | null;
+};
+
+export type UserMediaListResponseDTO = {
+    data: MediaVisibleDTO[];
+    nextCursor: string | null;
+};
+
+export type UserCommentsListResponseDTO = {
+    data: CommentDTO[];
+    nextCursor: string | null;
+};
+
+export type UserRatingItemDTO = {
+    value: number;
+    media: MediaVisibleDTO;
+};
+
+export type UserRatingsListResponseDTO = {
+    data: UserRatingItemDTO[];
+    nextCursor: string | null;
+};
