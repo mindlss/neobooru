@@ -7,19 +7,160 @@
 		"requestBodies": {},
 		"responses": {},
 		"schemas": {
+			"_36_Enums.CommentDeletedKind": {
+				"type": "string",
+				"enum": [
+					"USER",
+					"MODERATOR"
+				]
+			},
+			"CommentDeletedKind": {
+				"$ref": "#/components/schemas/_36_Enums.CommentDeletedKind"
+			},
 			"_36_Enums.UserRole": {
 				"type": "string",
 				"enum": [
+					"USER",
+					"MODERATOR",
 					"GUEST",
 					"UNVERIFIED",
-					"USER",
 					"TRUSTED",
-					"MODERATOR",
 					"ADMIN"
 				]
 			},
 			"UserRole": {
 				"$ref": "#/components/schemas/_36_Enums.UserRole"
+			},
+			"CommentAuthorDTO": {
+				"properties": {
+					"role": {
+						"$ref": "#/components/schemas/UserRole"
+					},
+					"username": {
+						"type": "string"
+					},
+					"id": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"role",
+					"username",
+					"id"
+				],
+				"type": "object"
+			},
+			"CommentDTO": {
+				"properties": {
+					"user": {
+						"$ref": "#/components/schemas/CommentAuthorDTO"
+					},
+					"createdAt": {
+						"type": "string"
+					},
+					"deletedReason": {
+						"type": "string",
+						"nullable": true
+					},
+					"deletedKind": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/CommentDeletedKind"
+							}
+						],
+						"nullable": true
+					},
+					"isDeleted": {
+						"type": "boolean"
+					},
+					"content": {
+						"type": "string",
+						"nullable": true
+					},
+					"parentId": {
+						"type": "string",
+						"nullable": true
+					},
+					"userId": {
+						"type": "string"
+					},
+					"mediaId": {
+						"type": "string"
+					},
+					"id": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"user",
+					"createdAt",
+					"deletedReason",
+					"deletedKind",
+					"isDeleted",
+					"content",
+					"parentId",
+					"userId",
+					"mediaId",
+					"id"
+				],
+				"type": "object"
+			},
+			"CommentsListResponseDTO": {
+				"properties": {
+					"nextCursor": {
+						"type": "string",
+						"nullable": true
+					},
+					"data": {
+						"items": {
+							"$ref": "#/components/schemas/CommentDTO"
+						},
+						"type": "array"
+					}
+				},
+				"required": [
+					"nextCursor",
+					"data"
+				],
+				"type": "object"
+			},
+			"CreateCommentBodyDTO": {
+				"properties": {
+					"parentId": {
+						"type": "string",
+						"nullable": true
+					},
+					"content": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"content"
+				],
+				"type": "object"
+			},
+			"OkDTO": {
+				"properties": {
+					"status": {
+						"type": "string",
+						"enum": [
+							"ok"
+						],
+						"nullable": false
+					}
+				},
+				"required": [
+					"status"
+				],
+				"type": "object"
+			},
+			"DeleteCommentBodyDTO": {
+				"properties": {
+					"reason": {
+						"type": "string"
+					}
+				},
+				"type": "object"
 			},
 			"UserSelfDTO": {
 				"properties": {
@@ -177,21 +318,6 @@
 					"email"
 				],
 				"type": "object"
-			},
-			"OkDTO": {
-				"properties": {
-					"ok": {
-						"type": "boolean",
-						"enum": [
-							true
-						],
-						"nullable": false
-					}
-				},
-				"required": [
-					"ok"
-				],
-				"type": "object"
 			}
 		},
 		"securitySchemes": {
@@ -213,6 +339,157 @@
 		"contact": {}
 	},
 	"paths": {
+		"/media/{id}/comments": {
+			"get": {
+				"operationId": "ListComments",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/CommentsListResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "List comments for media (viewer-aware, public)\nGET /media/:id/comments",
+				"tags": [
+					"Comments"
+				],
+				"security": [
+					{
+						"optionalCookieAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
+						"name": "limit",
+						"required": false,
+						"schema": {
+							"format": "double",
+							"type": "number"
+						}
+					},
+					{
+						"in": "query",
+						"name": "cursor",
+						"required": false,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
+						"name": "sort",
+						"required": false,
+						"schema": {
+							"type": "string"
+						}
+					}
+				]
+			},
+			"post": {
+				"operationId": "CreateMediaComment",
+				"responses": {
+					"201": {
+						"description": "Created",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/CommentDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "Create comment (auth required)\nPOST /media/:id/comments",
+				"tags": [
+					"Comments"
+				],
+				"security": [
+					{
+						"cookieAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/CreateCommentBodyDTO"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/comments/{id}": {
+			"delete": {
+				"operationId": "DeleteCommentById",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/OkDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "Soft-delete comment (owner or mod/admin)\nDELETE /comments/:id",
+				"tags": [
+					"Comments"
+				],
+				"security": [
+					{
+						"cookieAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/DeleteCommentBodyDTO"
+							}
+						}
+					}
+				}
+			}
+		},
 		"/auth/register": {
 			"post": {
 				"operationId": "Register",

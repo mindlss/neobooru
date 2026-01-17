@@ -31,9 +31,8 @@ import {
     type LoginBodyDTO,
 } from '../dto/auth.dto';
 import type { ErrorEnvelopeDTO } from '../dto/error.dto';
+import type { OkDTO } from '../dto/common.dto';
 import { registerSchema, loginSchema } from '../schemas/auth.schemas';
-
-type OkDTO = { ok: true };
 
 @Route('auth')
 @Tags('Auth')
@@ -120,7 +119,7 @@ export class AuthController extends Controller {
         const res = this.mustGetRes(req);
         this.setAuthCookies(res, newAccess, newRefresh);
 
-        return { ok: true };
+        return { status: 'ok' };
     }
 
     @Post('logout')
@@ -128,7 +127,7 @@ export class AuthController extends Controller {
     public async logout(@Request() req: ExpressRequest): Promise<OkDTO> {
         const res = this.mustGetRes(req);
         this.clearAuthCookies(res);
-        return { ok: true };
+        return { status: 'ok' };
     }
 
     // ---------------- helpers ----------------
