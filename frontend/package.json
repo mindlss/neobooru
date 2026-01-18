@@ -1,0 +1,43 @@
+{
+  "name": "neobooru-frontend",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint --max-warnings=0 src",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.13.5",
+    "@emotion/styled": "^11.13.5",
+    "axios": "^1.7.7",
+    "framer-motion": "^12.23.26",
+    "pdfjs-dist": "^5.4.449",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-pdf": "^10.2.0",
+    "react-router-dom": "^6.28.0",
+    "sass": "^1.93.2",
+    "vite-plugin-svgr": "^4.5.0",
+    "vite-tsconfig-paths": "^5.0.1",
+    "zustand": "^5.0.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.9.0",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "eslint": "^8.0.0",
+    "eslint-config-react-app": "^7.0.1",
+    "eslint-plugin-react-hooks": "^5.1.0-rc.0",
+    "eslint-plugin-react-refresh": "^0.4.9",
+    "globals": "^15.9.0",
+    "prettier": "3.3.3",
+    "typescript": "^5.5.2",
+    "typescript-eslint": "^8.0.1",
+    "vite": "^5.4.1",
+    "vite-plugin-eslint": "^1.8.1"
+  }
+}

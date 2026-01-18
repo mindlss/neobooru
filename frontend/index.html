@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>neobooru</title>
+
+    <style>
+      body {
+        background-color: #0a0a0a;
+      }
+      #initial-loader {
+        background-color: #0a0a0a;
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        transition: opacity 0.3s ease;
+      }
+
+      .progress-container {
+        width: 300px;
+        max-width: 80vw;
+      }
+
+      .progress-bar {
+        width: 100%;
+        height: 6px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 999px;
+        overflow: hidden;
+        box-shadow:
+          0 0 20px rgba(0, 0, 0, 0.2),
+          0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+      }
+
+      .progress-fill {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(
+          90deg,
+          #1ab6a9 0%,
+          #1ab6a9 50%,
+          #1ab6a9 100%
+        );
+        border-radius: 999px;
+        box-shadow: 0 0 20px rgba(59, 130, 246, 0.6);
+        animation: progressLoad 0.2s ease-in-out forwards;
+        position: relative;
+      }
+
+      .progress-fill::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          90deg,
+          transparent 0%,
+          rgba(255, 255, 255, 0.3) 50%,
+          transparent 100%
+        );
+        animation: shimmer 1.5s infinite;
+      }
+
+      @keyframes progressLoad {
+        0% {
+          width: 0%;
+        }
+        50% {
+          width: 70%;
+        }
+        100% {
+          width: 100%;
+        }
+      }
+
+      @keyframes shimmer {
+        0% {
+          transform: translateX(-100%);
+        }
+        100% {
+          transform: translateX(100%);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="initial-loader">
+      <div class="progress-container">
+        <div class="progress-bar">
+          <div class="progress-fill"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="root"></div>
+    <script type="module" src="/src/index.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,158 @@
+body {
+    height: 100vh;
+}
+
+.container {
+  height: 100vh; // ← Вместо min-height
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden; // ← Скролл отключен только на 404
+}
+
+.content {
+  max-width: 650px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 24px;
+}
+
+.errorCode {
+  color: #1AB6A9;
+  font-size: 96px;
+  font-weight: 700;
+  text-align: center;
+  margin: 0;
+  line-height: 1;
+}
+
+.errorText {
+  color: #8C8D90;
+  font-size: 18px;
+  font-weight: 400;
+  text-align: center;
+  margin: 0;
+}
+
+.rat {
+  width: 200px;
+  height: 200px;
+  object-fit: contain;
+  cursor: pointer;
+  user-select: none;
+  margin: 8px 0;
+}
+
+.button {
+  padding: 10px 24px;
+  height: 40px;
+  background: #1AB6A9;
+  border: none;
+  border-radius: 8px;
+  color: #000000;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 8px;
+
+  &:hover {
+    background: #18a599;
+    transform: translateY(-2px);
+  }
+
+  &:active {
+    background: #169085;
+    transform: translateY(0);
+  }
+}
+
+.card {
+  max-width: 308px;
+  width: 100%;
+  background: #111213;
+  border: 1px solid #202020;
+  border-radius: 15px;
+  padding: 16px;
+  margin-top: 30px;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.cardIcon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: #1AB6A9;
+}
+
+.cardTitle {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0;
+  color: #FFFFFF;
+}
+
+.cardText {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: #8C8D90;
+  margin: 0;
+}
+
+.code {
+  display: inline-block;
+  background: #0A0A0A;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  color: #1AB6A9;
+  font-size: 11px;
+}
+
+@media (max-width: 768px) {
+  .errorCode {
+    font-size: 72px;
+  }
+
+  .errorText {
+    font-size: 16px;
+  }
+
+  .rat {
+    width: 150px;
+    height: 150px;
+  }
+
+  .card {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .errorCode {
+    font-size: 56px;
+  }
+
+  .rat {
+    width: 120px;
+    height: 120px;
+  }
+
+  .button {
+    width: 100%;
+    max-width: 200px;
+  }
+}
