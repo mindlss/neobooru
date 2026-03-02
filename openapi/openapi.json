@@ -1,0 +1,4230 @@
+{
+	"openapi": "3.0.0",
+	"components": {
+		"examples": {},
+		"headers": {},
+		"parameters": {},
+		"requestBodies": {},
+		"responses": {},
+		"schemas": {
+			"UserSelfDTO": {
+				"properties": {
+					"permissions": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array"
+					},
+					"roles": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array"
+					},
+					"isBanned": {
+						"type": "boolean"
+					},
+					"warningCount": {
+						"type": "number",
+						"format": "double"
+					},
+					"uploadCount": {
+						"type": "number",
+						"format": "double"
+					},
+					"showUploads": {
+						"type": "boolean"
+					},
+					"showFavorites": {
+						"type": "boolean"
+					},
+					"showRatings": {
+						"type": "boolean"
+					},
+					"showComments": {
+						"type": "boolean"
+					},
+					"emailVerifiedAt": {
+						"type": "string",
+						"nullable": true
+					},
+					"updatedAt": {
+						"type": "string"
+					},
+					"createdAt": {
+						"type": "string"
+					},
+					"website": {
+						"type": "string",
+						"nullable": true
+					},
+					"bio": {
+						"type": "string",
+						"nullable": true
+					},
+					"avatarUrl": {
+						"type": "string",
+						"nullable": true
+					},
+					"birthDate": {
+						"type": "string",
+						"nullable": true
+					},
+					"email": {
+						"type": "string"
+					},
+					"username": {
+						"type": "string"
+					},
+					"id": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"isBanned",
+					"warningCount",
+					"uploadCount",
+					"showUploads",
+					"showFavorites",
+					"showRatings",
+					"showComments",
+					"emailVerifiedAt",
+					"updatedAt",
+					"createdAt",
+					"website",
+					"bio",
+					"avatarUrl",
+					"birthDate",
+					"email",
+					"username",
+					"id"
+				],
+				"type": "object"
+			},
+			"UserPublicDTO": {
+				"properties": {
+					"createdAt": {
+						"type": "string"
+					},
+					"website": {
+						"type": "string",
+						"nullable": true
+					},
+					"bio": {
+						"type": "string",
+						"nullable": true
+					},
+					"avatarUrl": {
+						"type": "string",
+						"nullable": true
+					},
+					"username": {
+						"type": "string"
+					},
+					"id": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"createdAt",
+					"website",
+					"bio",
+					"avatarUrl",
+					"username",
+					"id"
+				],
+				"type": "object"
+			},
+			"TagPublicDTO": {
+				"properties": {
+					"addedAt": {
+						"type": "string"
+					},
+					"color": {
+						"type": "string"
+					},
+					"name": {
+						"type": "string"
+					},
+					"id": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"color",
+					"name",
+					"id"
+				],
+				"type": "object"
+			},
+			"MediaPublicDTO": {
+				"properties": {
+					"commentCount": {
+						"type": "number",
+						"format": "double"
+					},
+					"myRating": {
+						"type": "number",
+						"format": "double",
+						"nullable": true
+					},
+					"ratingCount": {
+						"type": "number",
+						"format": "double"
+					},
+					"ratingAvg": {
+						"type": "number",
+						"format": "double"
+					},
+					"favorite": {
+						"type": "boolean"
+					},
+					"tags": {
+						"items": {
+							"$ref": "#/components/schemas/TagPublicDTO"
+						},
+						"type": "array"
+					},
+					"previewUrl": {
+						"type": "string",
+						"nullable": true
+					},
+					"createdAt": {
+						"type": "string"
+					},
+					"isExplicit": {
+						"type": "boolean"
+					},
+					"description": {
+						"type": "string",
+						"nullable": true
+					},
+					"duration": {
+						"type": "number",
+						"format": "double",
+						"nullable": true
+					},
+					"height": {
+						"type": "number",
+						"format": "double",
+						"nullable": true
+					},
+					"width": {
+						"type": "number",
+						"format": "double",
+						"nullable": true
+					},
+					"size": {
+						"type": "number",
+						"format": "double"
+					},
+					"contentType": {
+						"type": "string"
+					},
+					"type": {
+						"type": "string",
+						"enum": [
+							"IMAGE",
+							"VIDEO"
+						]
+					},
+					"id": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"commentCount",
+					"myRating",
+					"ratingCount",
+					"ratingAvg",
+					"favorite",
+					"tags",
+					"previewUrl",
+					"createdAt",
+					"isExplicit",
+					"description",
+					"duration",
+					"height",
+					"width",
+					"size",
+					"contentType",
+					"type",
+					"id"
+				],
+				"type": "object"
+			},
+			"MediaUserDTO": {
+				"allOf": [
+					{
+						"$ref": "#/components/schemas/MediaPublicDTO"
+					},
+					{
+						"properties": {
+							"originalUrl": {
+								"type": "string",
+								"nullable": true
+							}
+						},
+						"required": [
+							"originalUrl"
+						],
+						"type": "object"
+					}
+				]
+			},
+			"MediaModeratorDTO": {
+				"allOf": [
+					{
+						"$ref": "#/components/schemas/MediaUserDTO"
+					},
+					{
+						"properties": {
+							"previewKey": {
+								"type": "string",
+								"nullable": true
+							},
+							"originalKey": {
+								"type": "string"
+							},
+							"deletedBy": {
+								"type": "string",
+								"nullable": true
+							},
+							"deletedAt": {
+								"type": "string",
+								"nullable": true
+							},
+							"moderationNotes": {
+								"type": "string",
+								"nullable": true
+							},
+							"moderatedById": {
+								"type": "string",
+								"nullable": true
+							},
+							"moderatedAt": {
+								"type": "string",
+								"nullable": true
+							},
+							"moderationStatus": {
+								"type": "string",
+								"enum": [
+									"PENDING",
+									"APPROVED",
+									"REJECTED"
+								]
+							},
+							"hash": {
+								"type": "string"
+							}
+						},
+						"required": [
+							"previewKey",
+							"originalKey",
+							"deletedBy",
+							"deletedAt",
+							"moderationNotes",
+							"moderatedById",
+							"moderatedAt",
+							"moderationStatus",
+							"hash"
+						],
+						"type": "object"
+					}
+				],
+				"description": "Sensitive/staff fields.\nShow them only if viewer can actually act as staff for media.\n\nIMPORTANT: \"read explicit\" is NOT a moderation entitlement by itself,\nso it must NOT unlock mod fields."
+			},
+			"MediaVisibleDTO": {
+				"anyOf": [
+					{
+						"$ref": "#/components/schemas/MediaPublicDTO"
+					},
+					{
+						"$ref": "#/components/schemas/MediaUserDTO"
+					},
+					{
+						"$ref": "#/components/schemas/MediaModeratorDTO"
+					}
+				]
+			},
+			"UserMediaListResponseDTO": {
+				"properties": {
+					"nextCursor": {
+						"type": "string",
+						"nullable": true
+					},
+					"data": {
+						"items": {
+							"$ref": "#/components/schemas/MediaVisibleDTO"
+						},
+						"type": "array"
+					}
+				},
+				"required": [
+					"nextCursor",
+					"data"
+				],
+				"type": "object"
+			},
+			"_36_Enums.CommentDeletedKind": {
+				"type": "string",
+				"enum": [
+					"USER",
+					"MODERATOR"
+				]
+			},
+			"CommentDeletedKind": {
+				"$ref": "#/components/schemas/_36_Enums.CommentDeletedKind"
+			},
+			"CommentAuthorDTO": {
+				"properties": {
+					"username": {
+						"type": "string"
+					},
+					"id": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"username",
+					"id"
+				],
+				"type": "object"
+			},
+			"CommentDTO": {
+				"properties": {
+					"user": {
+						"$ref": "#/components/schemas/CommentAuthorDTO"
+					},
+					"createdAt": {
+						"type": "string"
+					},
+					"deletedReason": {
+						"type": "string",
+						"nullable": true
+					},
+					"deletedKind": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/CommentDeletedKind"
+							}
+						],
+						"nullable": true
+					},
+					"isDeleted": {
+						"type": "boolean"
+					},
+					"content": {
+						"type": "string",
+						"nullable": true
+					},
+					"parentId": {
+						"type": "string",
+						"nullable": true
+					},
+					"userId": {
+						"type": "string"
+					},
+					"mediaId": {
+						"type": "string"
+					},
+					"id": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"user",
+					"createdAt",
+					"deletedReason",
+					"deletedKind",
+					"isDeleted",
+					"content",
+					"parentId",
+					"userId",
+					"mediaId",
+					"id"
+				],
+				"type": "object"
+			},
+			"UserCommentsListResponseDTO": {
+				"properties": {
+					"nextCursor": {
+						"type": "string",
+						"nullable": true
+					},
+					"data": {
+						"items": {
+							"$ref": "#/components/schemas/CommentDTO"
+						},
+						"type": "array"
+					}
+				},
+				"required": [
+					"nextCursor",
+					"data"
+				],
+				"type": "object"
+			},
+			"UserRatingItemDTO": {
+				"properties": {
+					"media": {
+						"$ref": "#/components/schemas/MediaVisibleDTO"
+					},
+					"value": {
+						"type": "number",
+						"format": "double"
+					}
+				},
+				"required": [
+					"media",
+					"value"
+				],
+				"type": "object"
+			},
+			"UserRatingsListResponseDTO": {
+				"properties": {
+					"nextCursor": {
+						"type": "string",
+						"nullable": true
+					},
+					"data": {
+						"items": {
+							"$ref": "#/components/schemas/UserRatingItemDTO"
+						},
+						"type": "array"
+					}
+				},
+				"required": [
+					"nextCursor",
+					"data"
+				],
+				"type": "object"
+			},
+			"TagSuggestDTO": {
+				"properties": {
+					"canonicalName": {
+						"type": "string"
+					},
+					"canonicalId": {
+						"type": "string"
+					},
+					"categoryName": {
+						"type": "string"
+					},
+					"color": {
+						"type": "string"
+					},
+					"usageCount": {
+						"type": "number",
+						"format": "double"
+					},
+					"name": {
+						"type": "string"
+					},
+					"id": {
+						"type": "string"
+					},
+					"kind": {
+						"type": "string",
+						"enum": [
+							"tag",
+							"alias"
+						]
+					}
+				},
+				"required": [
+					"canonicalName",
+					"canonicalId",
+					"color",
+					"usageCount",
+					"name",
+					"id",
+					"kind"
+				],
+				"type": "object"
+			},
+			"TagSuggestListResponseDTO": {
+				"properties": {
+					"data": {
+						"items": {
+							"$ref": "#/components/schemas/TagSuggestDTO"
+						},
+						"type": "array"
+					}
+				},
+				"required": [
+					"data"
+				],
+				"type": "object"
+			},
+			"TagSearchDTO": {
+				"properties": {
+					"categoryName": {
+						"type": "string"
+					},
+					"usageCount": {
+						"type": "number",
+						"format": "double"
+					},
+					"color": {
+						"type": "string"
+					},
+					"name": {
+						"type": "string"
+					},
+					"id": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"usageCount",
+					"color",
+					"name",
+					"id"
+				],
+				"type": "object"
+			},
+			"TagSearchListResponseDTO": {
+				"properties": {
+					"data": {
+						"items": {
+							"$ref": "#/components/schemas/TagSearchDTO"
+						},
+						"type": "array"
+					}
+				},
+				"required": [
+					"data"
+				],
+				"type": "object"
+			},
+			"CreateTagBodyDTO": {
+				"properties": {
+					"categoryId": {
+						"type": "string"
+					},
+					"name": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"categoryId",
+					"name"
+				],
+				"type": "object"
+			},
+			"TagAdminDTO": {
+				"allOf": [
+					{
+						"$ref": "#/components/schemas/TagSearchDTO"
+					},
+					{
+						"properties": {
+							"isExplicit": {
+								"type": "boolean"
+							},
+							"customColor": {
+								"type": "string",
+								"nullable": true
+							},
+							"categoryId": {
+								"type": "string"
+							}
+						},
+						"required": [
+							"isExplicit",
+							"customColor",
+							"categoryId"
+						],
+						"type": "object"
+					}
+				]
+			},
+			"PatchTagBodyDTO": {
+				"properties": {
+					"isExplicit": {
+						"type": "boolean"
+					},
+					"customColor": {
+						"type": "string",
+						"nullable": true
+					}
+				},
+				"type": "object"
+			},
+			"TagAliasesListResponseDTO": {
+				"properties": {
+					"data": {
+						"items": {},
+						"type": "array"
+					}
+				},
+				"required": [
+					"data"
+				],
+				"type": "object"
+			},
+			"CreateAliasBodyDTO": {
+				"properties": {
+					"alias": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"alias"
+				],
+				"type": "object"
+			},
+			"OkDTO": {
+				"properties": {
+					"status": {
+						"type": "string",
+						"enum": [
+							"ok"
+						],
+						"nullable": false
+					}
+				},
+				"required": [
+					"status"
+				],
+				"type": "object"
+			},
+			"TagNamesBodyDTO": {
+				"properties": {
+					"tags": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array"
+					}
+				},
+				"required": [
+					"tags"
+				],
+				"type": "object"
+			},
+			"SearchMetaDTO": {
+				"properties": {
+					"excludedComic": {
+						"type": "boolean"
+					},
+					"forcedByQuery": {
+						"type": "boolean"
+					},
+					"comicMode": {
+						"type": "boolean"
+					}
+				},
+				"required": [
+					"excludedComic",
+					"forcedByQuery",
+					"comicMode"
+				],
+				"type": "object"
+			},
+			"SearchMediaItemDTO": {
+				"properties": {
+					"previewUrl": {
+						"type": "string",
+						"nullable": true
+					},
+					"favorite": {
+						"type": "boolean"
+					},
+					"tags": {
+						"items": {
+							"allOf": [
+								{
+									"$ref": "#/components/schemas/TagSearchDTO"
+								},
+								{
+									"properties": {
+										"addedAt": {
+											"type": "string"
+										},
+										"customColor": {
+											"type": "string",
+											"nullable": true
+										},
+										"categoryId": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"addedAt",
+										"customColor",
+										"categoryId"
+									],
+									"type": "object"
+								}
+							]
+						},
+						"type": "array"
+					},
+					"deletedBy": {
+						"type": "string",
+						"nullable": true
+					},
+					"deletedAt": {
+						"type": "string",
+						"nullable": true
+					},
+					"updatedAt": {
+						"type": "string"
+					},
+					"createdAt": {
+						"type": "string"
+					},
+					"uploadedById": {
+						"type": "string"
+					},
+					"moderationNotes": {
+						"type": "string",
+						"nullable": true
+					},
+					"moderatedById": {
+						"type": "string",
+						"nullable": true
+					},
+					"moderatedAt": {
+						"type": "string",
+						"nullable": true
+					},
+					"moderationStatus": {
+						"type": "string",
+						"enum": [
+							"PENDING",
+							"APPROVED",
+							"REJECTED"
+						]
+					},
+					"previewKey": {
+						"type": "string",
+						"nullable": true
+					},
+					"originalKey": {
+						"type": "string"
+					},
+					"hash": {
+						"type": "string"
+					},
+					"commentCount": {
+						"type": "number",
+						"format": "double"
+					},
+					"myRating": {
+						"type": "number",
+						"format": "double",
+						"nullable": true
+					},
+					"ratingCount": {
+						"type": "number",
+						"format": "double"
+					},
+					"ratingAvg": {
+						"type": "number",
+						"format": "double"
+					},
+					"isExplicit": {
+						"type": "boolean"
+					},
+					"description": {
+						"type": "string",
+						"nullable": true
+					},
+					"duration": {
+						"type": "number",
+						"format": "double",
+						"nullable": true
+					},
+					"height": {
+						"type": "number",
+						"format": "double",
+						"nullable": true
+					},
+					"width": {
+						"type": "number",
+						"format": "double",
+						"nullable": true
+					},
+					"size": {
+						"type": "number",
+						"format": "double"
+					},
+					"contentType": {
+						"type": "string"
+					},
+					"type": {
+						"type": "string",
+						"enum": [
+							"IMAGE",
+							"VIDEO"
+						]
+					},
+					"id": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"previewUrl",
+					"favorite",
+					"tags",
+					"deletedBy",
+					"deletedAt",
+					"updatedAt",
+					"createdAt",
+					"uploadedById",
+					"moderationNotes",
+					"moderatedById",
+					"moderatedAt",
+					"moderationStatus",
+					"previewKey",
+					"originalKey",
+					"hash",
+					"commentCount",
+					"myRating",
+					"ratingCount",
+					"ratingAvg",
+					"isExplicit",
+					"description",
+					"duration",
+					"height",
+					"width",
+					"size",
+					"contentType",
+					"type",
+					"id"
+				],
+				"type": "object"
+			},
+			"SearchComicItemDTO": {
+				"properties": {
+					"previewUrl": {
+						"type": "string",
+						"nullable": true
+					},
+					"updatedAt": {
+						"type": "string"
+					},
+					"createdAt": {
+						"type": "string"
+					},
+					"ratingCount": {
+						"type": "number",
+						"format": "double"
+					},
+					"ratingAvg": {
+						"type": "number",
+						"format": "double"
+					},
+					"isExplicit": {
+						"type": "boolean"
+					},
+					"randomKey": {
+						"type": "number",
+						"format": "double"
+					},
+					"lastPageMediaId": {
+						"type": "string",
+						"nullable": true
+					},
+					"lastPageAddedAt": {
+						"type": "string",
+						"nullable": true
+					},
+					"coverMediaId": {
+						"type": "string",
+						"nullable": true
+					},
+					"createdById": {
+						"type": "string"
+					},
+					"status": {
+						"type": "string"
+					},
+					"title": {
+						"type": "string"
+					},
+					"id": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"previewUrl",
+					"updatedAt",
+					"createdAt",
+					"ratingCount",
+					"ratingAvg",
+					"isExplicit",
+					"randomKey",
+					"lastPageMediaId",
+					"lastPageAddedAt",
+					"coverMediaId",
+					"createdById",
+					"status",
+					"title",
+					"id"
+				],
+				"type": "object"
+			},
+			"SearchResponseDTO": {
+				"properties": {
+					"nextCursor": {
+						"type": "string",
+						"nullable": true
+					},
+					"data": {
+						"items": {
+							"anyOf": [
+								{
+									"$ref": "#/components/schemas/SearchMediaItemDTO"
+								},
+								{
+									"$ref": "#/components/schemas/SearchComicItemDTO"
+								}
+							]
+						},
+						"type": "array"
+					},
+					"meta": {
+						"$ref": "#/components/schemas/SearchMetaDTO"
+					}
+				},
+				"required": [
+					"nextCursor",
+					"data",
+					"meta"
+				],
+				"type": "object"
+			},
+			"CreateReportResponseDTO": {
+				"properties": {
+					"status": {
+						"type": "string",
+						"enum": [
+							"ok"
+						],
+						"nullable": false
+					}
+				},
+				"required": [
+					"status"
+				],
+				"type": "object"
+			},
+			"CreateReportBodyDTO": {
+				"properties": {
+					"description": {
+						"type": "string"
+					},
+					"reason": {
+						"type": "string"
+					},
+					"targetId": {
+						"type": "string"
+					},
+					"type": {
+						"type": "string",
+						"enum": [
+							"media",
+							"comment"
+						]
+					}
+				},
+				"required": [
+					"reason",
+					"targetId",
+					"type"
+				],
+				"type": "object"
+			},
+			"AdminReportDTO": {
+				"properties": {
+					"resolvedByUsername": {
+						"type": "string",
+						"nullable": true
+					},
+					"resolvedById": {
+						"type": "string",
+						"nullable": true
+					},
+					"assignedToUsername": {
+						"type": "string",
+						"nullable": true
+					},
+					"assignedToId": {
+						"type": "string",
+						"nullable": true
+					},
+					"reportedByUsername": {
+						"type": "string"
+					},
+					"reportedById": {
+						"type": "string"
+					},
+					"updatedAt": {
+						"type": "string"
+					},
+					"createdAt": {
+						"type": "string"
+					},
+					"status": {
+						"type": "string"
+					},
+					"description": {
+						"type": "string",
+						"nullable": true
+					},
+					"reason": {
+						"type": "string"
+					},
+					"targetId": {
+						"type": "string"
+					},
+					"type": {
+						"type": "string"
+					},
+					"id": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"resolvedByUsername",
+					"resolvedById",
+					"assignedToUsername",
+					"assignedToId",
+					"reportedByUsername",
+					"reportedById",
+					"updatedAt",
+					"createdAt",
+					"status",
+					"description",
+					"reason",
+					"targetId",
+					"type",
+					"id"
+				],
+				"type": "object"
+			},
+			"AdminReportsListResponseDTO": {
+				"properties": {
+					"nextCursor": {
+						"type": "string",
+						"nullable": true
+					},
+					"data": {
+						"items": {
+							"$ref": "#/components/schemas/AdminReportDTO"
+						},
+						"type": "array"
+					}
+				},
+				"required": [
+					"nextCursor",
+					"data"
+				],
+				"type": "object"
+			},
+			"AdminReportTargetDTO": {
+				"properties": {
+					"lastReportedAt": {
+						"type": "string"
+					},
+					"firstReportedAt": {
+						"type": "string"
+					},
+					"reportCount": {
+						"type": "number",
+						"format": "double"
+					},
+					"targetId": {
+						"type": "string"
+					},
+					"type": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"lastReportedAt",
+					"firstReportedAt",
+					"reportCount",
+					"targetId",
+					"type"
+				],
+				"type": "object"
+			},
+			"AdminReportTargetsResponseDTO": {
+				"properties": {
+					"totalPages": {
+						"type": "number",
+						"format": "double"
+					},
+					"totalTargets": {
+						"type": "number",
+						"format": "double"
+					},
+					"limit": {
+						"type": "number",
+						"format": "double"
+					},
+					"page": {
+						"type": "number",
+						"format": "double"
+					},
+					"data": {
+						"items": {
+							"$ref": "#/components/schemas/AdminReportTargetDTO"
+						},
+						"type": "array"
+					}
+				},
+				"required": [
+					"totalPages",
+					"totalTargets",
+					"limit",
+					"page",
+					"data"
+				],
+				"type": "object"
+			},
+			"AdminReportPatchResponseDTO": {
+				"properties": {
+					"updatedAt": {
+						"type": "string"
+					},
+					"resolvedById": {
+						"type": "string",
+						"nullable": true
+					},
+					"assignedToId": {
+						"type": "string",
+						"nullable": true
+					},
+					"reportStatus": {
+						"type": "string"
+					},
+					"id": {
+						"type": "string"
+					},
+					"status": {
+						"type": "string",
+						"enum": [
+							"ok"
+						],
+						"nullable": false
+					}
+				},
+				"required": [
+					"updatedAt",
+					"resolvedById",
+					"assignedToId",
+					"reportStatus",
+					"id",
+					"status"
+				],
+				"type": "object"
+			},
+			"AdminReportPatchBodyDTO": {
+				"properties": {
+					"assignedToId": {
+						"type": "string",
+						"nullable": true
+					},
+					"status": {
+						"type": "string",
+						"enum": [
+							"pending",
+							"reviewing",
+							"resolved",
+							"rejected"
+						]
+					}
+				},
+				"required": [
+					"status"
+				],
+				"type": "object"
+			},
+			"RatingResultDTO": {
+				"properties": {
+					"myRating": {
+						"type": "number",
+						"format": "double",
+						"nullable": true
+					},
+					"ratingCount": {
+						"type": "number",
+						"format": "double"
+					},
+					"ratingAvg": {
+						"type": "number",
+						"format": "double"
+					}
+				},
+				"required": [
+					"myRating",
+					"ratingCount",
+					"ratingAvg"
+				],
+				"type": "object"
+			},
+			"RateMediaResponseDTO": {
+				"allOf": [
+					{
+						"properties": {
+							"status": {
+								"type": "string",
+								"enum": [
+									"ok"
+								],
+								"nullable": false
+							}
+						},
+						"required": [
+							"status"
+						],
+						"type": "object"
+					},
+					{
+						"$ref": "#/components/schemas/RatingResultDTO"
+					}
+				]
+			},
+			"SetRatingBodyDTO": {
+				"properties": {
+					"value": {
+						"type": "number",
+						"format": "double"
+					}
+				},
+				"required": [
+					"value"
+				],
+				"type": "object"
+			},
+			"ModerationQueueItemDTO": {
+				"properties": {
+					"moderationStatus": {
+						"type": "string",
+						"enum": [
+							"PENDING",
+							"APPROVED",
+							"REJECTED"
+						]
+					},
+					"isExplicit": {
+						"type": "boolean"
+					},
+					"createdAt": {
+						"type": "string"
+					},
+					"size": {
+						"type": "number",
+						"format": "double"
+					},
+					"contentType": {
+						"type": "string"
+					},
+					"type": {
+						"type": "string",
+						"enum": [
+							"IMAGE",
+							"VIDEO"
+						]
+					},
+					"id": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"moderationStatus",
+					"isExplicit",
+					"createdAt",
+					"size",
+					"contentType",
+					"type",
+					"id"
+				],
+				"type": "object"
+			},
+			"ModerationQueueResponseDTO": {
+				"properties": {
+					"nextCursor": {
+						"type": "string",
+						"nullable": true
+					},
+					"data": {
+						"items": {
+							"$ref": "#/components/schemas/ModerationQueueItemDTO"
+						},
+						"type": "array"
+					}
+				},
+				"required": [
+					"nextCursor",
+					"data"
+				],
+				"type": "object"
+			},
+			"ModerationActionResponseDTO": {
+				"properties": {
+					"moderationStatus": {
+						"type": "string",
+						"enum": [
+							"PENDING",
+							"APPROVED",
+							"REJECTED"
+						]
+					},
+					"mediaId": {
+						"type": "string"
+					},
+					"status": {
+						"type": "string",
+						"enum": [
+							"ok"
+						],
+						"nullable": false
+					}
+				},
+				"required": [
+					"moderationStatus",
+					"mediaId",
+					"status"
+				],
+				"type": "object"
+			},
+			"ModerationActionBodyDTO": {
+				"properties": {
+					"notes": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"MediaListResponseDTO": {
+				"properties": {
+					"nextCursor": {
+						"type": "string",
+						"nullable": true
+					},
+					"data": {
+						"items": {
+							"$ref": "#/components/schemas/MediaVisibleDTO"
+						},
+						"type": "array"
+					}
+				},
+				"required": [
+					"nextCursor",
+					"data"
+				],
+				"type": "object"
+			},
+			"MediaUploadDTO": {
+				"properties": {
+					"createdAt": {
+						"type": "string"
+					},
+					"moderationStatus": {
+						"type": "string",
+						"enum": [
+							"PENDING",
+							"APPROVED",
+							"REJECTED"
+						]
+					},
+					"size": {
+						"type": "number",
+						"format": "double"
+					},
+					"contentType": {
+						"type": "string"
+					},
+					"type": {
+						"type": "string",
+						"enum": [
+							"IMAGE",
+							"VIDEO"
+						]
+					},
+					"id": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"createdAt",
+					"moderationStatus",
+					"size",
+					"contentType",
+					"type",
+					"id"
+				],
+				"type": "object"
+			},
+			"JobName": {
+				"type": "string",
+				"enum": [
+					"quota_reset",
+					"restriction_expire",
+					"comic_rebuild"
+				]
+			},
+			"JobsListResponseDTO": {
+				"properties": {
+					"allowedJobs": {
+						"items": {
+							"$ref": "#/components/schemas/JobName"
+						},
+						"type": "array"
+					},
+					"data": {}
+				},
+				"required": [
+					"allowedJobs",
+					"data"
+				],
+				"type": "object"
+			},
+			"RunJobResultDTO": {
+				"properties": {
+					"stats": {},
+					"message": {
+						"type": "string"
+					},
+					"ok": {
+						"type": "boolean"
+					}
+				},
+				"required": [
+					"ok"
+				],
+				"type": "object"
+			},
+			"RunJobResponseDTO": {
+				"properties": {
+					"data": {
+						"properties": {
+							"result": {
+								"$ref": "#/components/schemas/RunJobResultDTO"
+							},
+							"job": {
+								"$ref": "#/components/schemas/JobName"
+							}
+						},
+						"required": [
+							"result",
+							"job"
+						],
+						"type": "object"
+					}
+				},
+				"required": [
+					"data"
+				],
+				"type": "object"
+			},
+			"CommentsListResponseDTO": {
+				"properties": {
+					"nextCursor": {
+						"type": "string",
+						"nullable": true
+					},
+					"data": {
+						"items": {
+							"$ref": "#/components/schemas/CommentDTO"
+						},
+						"type": "array"
+					}
+				},
+				"required": [
+					"nextCursor",
+					"data"
+				],
+				"type": "object"
+			},
+			"CreateCommentBodyDTO": {
+				"properties": {
+					"parentId": {
+						"type": "string",
+						"nullable": true
+					},
+					"content": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"content"
+				],
+				"type": "object"
+			},
+			"DeleteCommentBodyDTO": {
+				"properties": {
+					"reason": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"ComicStatusDTO": {
+				"type": "string",
+				"enum": [
+					"WIP",
+					"FINISHED",
+					"DEAD"
+				]
+			},
+			"ComicPageDTO": {
+				"properties": {
+					"addedAt": {
+						"type": "string"
+					},
+					"position": {
+						"type": "number",
+						"format": "double"
+					},
+					"mediaId": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"addedAt",
+					"position",
+					"mediaId"
+				],
+				"type": "object"
+			},
+			"ComicTagDTO": {
+				"properties": {
+					"isExplicit": {
+						"type": "boolean"
+					},
+					"name": {
+						"type": "string"
+					},
+					"id": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"isExplicit",
+					"name",
+					"id"
+				],
+				"type": "object"
+			},
+			"ComicDTO": {
+				"properties": {
+					"tags": {
+						"items": {
+							"$ref": "#/components/schemas/ComicTagDTO"
+						},
+						"type": "array"
+					},
+					"pages": {
+						"items": {
+							"$ref": "#/components/schemas/ComicPageDTO"
+						},
+						"type": "array"
+					},
+					"updatedAt": {
+						"type": "string"
+					},
+					"createdAt": {
+						"type": "string"
+					},
+					"ratingCount": {
+						"type": "number",
+						"format": "double"
+					},
+					"ratingAvg": {
+						"type": "number",
+						"format": "double"
+					},
+					"isExplicit": {
+						"type": "boolean"
+					},
+					"randomKey": {
+						"type": "number",
+						"format": "double"
+					},
+					"lastPageMediaId": {
+						"type": "string",
+						"nullable": true
+					},
+					"lastPageAddedAt": {
+						"type": "string",
+						"nullable": true
+					},
+					"coverMediaId": {
+						"type": "string",
+						"nullable": true
+					},
+					"createdById": {
+						"type": "string"
+					},
+					"status": {
+						"$ref": "#/components/schemas/ComicStatusDTO"
+					},
+					"title": {
+						"type": "string"
+					},
+					"id": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"tags",
+					"pages",
+					"updatedAt",
+					"createdAt",
+					"ratingCount",
+					"ratingAvg",
+					"isExplicit",
+					"randomKey",
+					"lastPageMediaId",
+					"lastPageAddedAt",
+					"coverMediaId",
+					"createdById",
+					"status",
+					"title",
+					"id"
+				],
+				"type": "object"
+			},
+			"ComicResponseDTO": {
+				"properties": {
+					"data": {
+						"$ref": "#/components/schemas/ComicDTO"
+					}
+				},
+				"required": [
+					"data"
+				],
+				"type": "object"
+			},
+			"CreateComicBodyDTO": {
+				"properties": {
+					"title": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"title"
+				],
+				"type": "object"
+			},
+			"UpdateComicBodyDTO": {
+				"properties": {
+					"coverMediaId": {
+						"type": "string",
+						"nullable": true
+					},
+					"status": {
+						"$ref": "#/components/schemas/ComicStatusDTO"
+					},
+					"title": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"AddComicPageBodyDTO": {
+				"properties": {
+					"position": {
+						"type": "number",
+						"format": "double"
+					},
+					"mediaId": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"mediaId"
+				],
+				"type": "object"
+			},
+			"OkResponseDTO": {
+				"properties": {
+					"ok": {
+						"type": "boolean",
+						"enum": [
+							true
+						],
+						"nullable": false
+					}
+				},
+				"required": [
+					"ok"
+				],
+				"type": "object"
+			},
+			"ReorderComicPagesBodyDTO": {
+				"properties": {
+					"orderedMediaIds": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array"
+					}
+				},
+				"required": [
+					"orderedMediaIds"
+				],
+				"type": "object"
+			},
+			"AuthResponseDTO": {
+				"properties": {
+					"user": {
+						"$ref": "#/components/schemas/UserSelfDTO"
+					}
+				},
+				"required": [
+					"user"
+				],
+				"type": "object"
+			},
+			"ErrorEnvelopeDTO": {
+				"properties": {
+					"error": {
+						"properties": {
+							"requestId": {
+								"type": "string"
+							},
+							"details": {},
+							"message": {
+								"type": "string"
+							},
+							"code": {
+								"type": "string"
+							}
+						},
+						"required": [
+							"code"
+						],
+						"type": "object"
+					}
+				},
+				"required": [
+					"error"
+				],
+				"type": "object"
+			},
+			"RegisterBodyDTO": {
+				"properties": {
+					"password": {
+						"type": "string"
+					},
+					"email": {
+						"type": "string"
+					},
+					"username": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"password",
+					"email",
+					"username"
+				],
+				"type": "object"
+			},
+			"LoginBodyDTO": {
+				"properties": {
+					"password": {
+						"type": "string"
+					},
+					"email": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"password",
+					"email"
+				],
+				"type": "object"
+			}
+		},
+		"securitySchemes": {
+			"cookieAuth": {
+				"type": "apiKey",
+				"in": "cookie",
+				"name": "accessToken"
+			},
+			"optionalCookieAuth": {
+				"type": "apiKey",
+				"in": "cookie",
+				"name": "accessToken"
+			}
+		}
+	},
+	"info": {
+		"title": "neobooru-backend",
+		"version": "0.0.1",
+		"contact": {}
+	},
+	"paths": {
+		"/users/me": {
+			"get": {
+				"operationId": "GetMe",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/UserSelfDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "GET /users/me",
+				"tags": [
+					"Users"
+				],
+				"security": [
+					{
+						"cookieAuth": [
+							"auth.load_permissions"
+						]
+					}
+				],
+				"parameters": []
+			},
+			"patch": {
+				"operationId": "PatchMe",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/UserSelfDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "PATCH /users/me",
+				"tags": [
+					"Users"
+				],
+				"security": [
+					{
+						"cookieAuth": [
+							"auth.load_permissions",
+							"users.update_self"
+						]
+					}
+				],
+				"parameters": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {}
+						}
+					}
+				}
+			}
+		},
+		"/users/{id}": {
+			"get": {
+				"operationId": "GetUserPublic",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/UserPublicDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "GET /users/:id",
+				"tags": [
+					"Users"
+				],
+				"security": [
+					{
+						"optionalCookieAuth": [
+							"auth.load_permissions",
+							"users.read"
+						]
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				]
+			}
+		},
+		"/users/{id}/uploads": {
+			"get": {
+				"operationId": "GetUserUploads",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/UserMediaListResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"tags": [
+					"Users"
+				],
+				"security": [
+					{
+						"optionalCookieAuth": [
+							"auth.load_permissions",
+							"users.read"
+						]
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
+						"name": "limit",
+						"required": false,
+						"schema": {
+							"format": "double",
+							"type": "number"
+						}
+					},
+					{
+						"in": "query",
+						"name": "cursor",
+						"required": false,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
+						"name": "sort",
+						"required": false,
+						"schema": {
+							"type": "string",
+							"enum": [
+								"new",
+								"old"
+							]
+						}
+					},
+					{
+						"in": "query",
+						"name": "type",
+						"required": false,
+						"schema": {
+							"type": "string",
+							"enum": [
+								"IMAGE",
+								"VIDEO"
+							]
+						}
+					}
+				]
+			}
+		},
+		"/users/{id}/favorites": {
+			"get": {
+				"operationId": "GetUserFavorites",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/UserMediaListResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"tags": [
+					"Users"
+				],
+				"security": [
+					{
+						"optionalCookieAuth": [
+							"auth.load_permissions",
+							"users.read"
+						]
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
+						"name": "limit",
+						"required": false,
+						"schema": {
+							"format": "double",
+							"type": "number"
+						}
+					},
+					{
+						"in": "query",
+						"name": "cursor",
+						"required": false,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
+						"name": "sort",
+						"required": false,
+						"schema": {
+							"type": "string",
+							"enum": [
+								"new",
+								"old"
+							]
+						}
+					},
+					{
+						"in": "query",
+						"name": "type",
+						"required": false,
+						"schema": {
+							"type": "string",
+							"enum": [
+								"IMAGE",
+								"VIDEO"
+							]
+						}
+					}
+				]
+			}
+		},
+		"/users/{id}/comments": {
+			"get": {
+				"operationId": "GetUserComments",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/UserCommentsListResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"tags": [
+					"Users"
+				],
+				"security": [
+					{
+						"optionalCookieAuth": [
+							"auth.load_permissions",
+							"users.read"
+						]
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
+						"name": "limit",
+						"required": false,
+						"schema": {
+							"format": "double",
+							"type": "number"
+						}
+					},
+					{
+						"in": "query",
+						"name": "cursor",
+						"required": false,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
+						"name": "sort",
+						"required": false,
+						"schema": {
+							"type": "string",
+							"enum": [
+								"new",
+								"old"
+							]
+						}
+					}
+				]
+			}
+		},
+		"/users/{id}/ratings": {
+			"get": {
+				"operationId": "GetUserRatings",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/UserRatingsListResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"tags": [
+					"Users"
+				],
+				"security": [
+					{
+						"optionalCookieAuth": [
+							"auth.load_permissions",
+							"users.read"
+						]
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
+						"name": "limit",
+						"required": false,
+						"schema": {
+							"format": "double",
+							"type": "number"
+						}
+					},
+					{
+						"in": "query",
+						"name": "cursor",
+						"required": false,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
+						"name": "sort",
+						"required": false,
+						"schema": {
+							"type": "string",
+							"enum": [
+								"new",
+								"old"
+							]
+						}
+					},
+					{
+						"in": "query",
+						"name": "type",
+						"required": false,
+						"schema": {
+							"type": "string",
+							"enum": [
+								"IMAGE",
+								"VIDEO"
+							]
+						}
+					}
+				]
+			}
+		},
+		"/users/me/avatar": {
+			"post": {
+				"operationId": "UploadMyAvatar",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/UserSelfDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "POST /users/me/avatar",
+				"tags": [
+					"Users"
+				],
+				"security": [
+					{
+						"cookieAuth": [
+							"auth.load_permissions",
+							"users.avatar_update_self"
+						]
+					}
+				],
+				"parameters": [],
+				"requestBody": {
+					"required": false,
+					"content": {
+						"multipart/form-data": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"avatar": {
+										"type": "string",
+										"format": "binary"
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/tags/search": {
+			"get": {
+				"operationId": "Search",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/TagSuggestListResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "GET /tags/search\npublic (optional auth), viewer-aware",
+				"tags": [
+					"Tags"
+				],
+				"security": [
+					{
+						"optionalCookieAuth": [
+							"auth.load_permissions"
+						]
+					}
+				],
+				"parameters": [
+					{
+						"in": "query",
+						"name": "q",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
+						"name": "limit",
+						"required": false,
+						"schema": {
+							"format": "double",
+							"type": "number"
+						}
+					}
+				]
+			}
+		},
+		"/tags/popular": {
+			"get": {
+				"operationId": "Popular",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/TagSearchListResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "GET /tags/popular\npublic (optional auth), viewer-aware",
+				"tags": [
+					"Tags"
+				],
+				"security": [
+					{
+						"optionalCookieAuth": [
+							"auth.load_permissions"
+						]
+					}
+				],
+				"parameters": [
+					{
+						"in": "query",
+						"name": "limit",
+						"required": false,
+						"schema": {
+							"format": "double",
+							"type": "number"
+						}
+					}
+				]
+			}
+		},
+		"/tags": {
+			"post": {
+				"operationId": "Create",
+				"responses": {
+					"201": {
+						"description": "Created",
+						"content": {
+							"application/json": {
+								"schema": {}
+							}
+						}
+					}
+				},
+				"description": "POST /tags\nstaff: TAGS_MANAGE",
+				"tags": [
+					"Tags"
+				],
+				"security": [
+					{
+						"cookieAuth": [
+							"auth.load_permissions",
+							"tags.manage"
+						]
+					}
+				],
+				"parameters": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/CreateTagBodyDTO"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/tags/{id}": {
+			"patch": {
+				"operationId": "Patch",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/TagAdminDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "PATCH /tags/:id\nstaff: TAGS_MANAGE",
+				"tags": [
+					"Tags"
+				],
+				"security": [
+					{
+						"cookieAuth": [
+							"auth.load_permissions",
+							"tags.manage"
+						]
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/PatchTagBodyDTO"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/tags/{id}/aliases": {
+			"get": {
+				"operationId": "ListTagAliases",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/TagAliasesListResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "GET /tags/:id/aliases\nstaff: TAGS_ALIASES_MANAGE",
+				"tags": [
+					"Tags"
+				],
+				"security": [
+					{
+						"cookieAuth": [
+							"auth.load_permissions",
+							"tags.aliases_manage"
+						]
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				]
+			},
+			"post": {
+				"operationId": "CreateTagAlias",
+				"responses": {
+					"201": {
+						"description": "Created",
+						"content": {
+							"application/json": {
+								"schema": {}
+							}
+						}
+					}
+				},
+				"description": "POST /tags/:id/aliases\nstaff: TAGS_ALIASES_MANAGE",
+				"tags": [
+					"Tags"
+				],
+				"security": [
+					{
+						"cookieAuth": [
+							"auth.load_permissions",
+							"tags.aliases_manage"
+						]
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/CreateAliasBodyDTO"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/tags/aliases/{id}": {
+			"delete": {
+				"operationId": "DeleteTagAlias",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/OkDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "DELETE /tags/aliases/:id\nstaff: TAGS_ALIASES_MANAGE",
+				"tags": [
+					"Tags"
+				],
+				"security": [
+					{
+						"cookieAuth": [
+							"auth.load_permissions",
+							"tags.aliases_manage"
+						]
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				]
+			}
+		},
+		"/media/{id}/tags": {
+			"post": {
+				"operationId": "SetTags",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/OkDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "POST /media/:id/tags\nneeds perms in principal (service checks):\n- MEDIA_TAGS_EDIT_ANY OR (MEDIA_TAGS_EDIT_OWN + owner)",
+				"tags": [
+					"Tags"
+				],
+				"security": [
+					{
+						"cookieAuth": [
+							"auth.load_permissions"
+						]
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/TagNamesBodyDTO"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/media/{id}/tags/add": {
+			"post": {
+				"operationId": "AddTags",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/OkDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "POST /media/:id/tags/add",
+				"tags": [
+					"Tags"
+				],
+				"security": [
+					{
+						"cookieAuth": [
+							"auth.load_permissions"
+						]
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/TagNamesBodyDTO"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/media/{id}/tags/remove": {
+			"post": {
+				"operationId": "RemoveTags",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/OkDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "POST /media/:id/tags/remove",
+				"tags": [
+					"Tags"
+				],
+				"security": [
+					{
+						"cookieAuth": [
+							"auth.load_permissions"
+						]
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/TagNamesBodyDTO"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/search": {
+			"get": {
+				"operationId": "Search",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/SearchResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "GET /search\npublic, permission-aware via principal (optional cookie auth)",
+				"tags": [
+					"Search"
+				],
+				"security": [
+					{
+						"optionalCookieAuth": [
+							"auth.load_permissions"
+						]
+					}
+				],
+				"parameters": [
+					{
+						"in": "query",
+						"name": "q",
+						"required": false,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
+						"name": "limit",
+						"required": false,
+						"schema": {
+							"format": "double",
+							"type": "number"
+						}
+					},
+					{
+						"in": "query",
+						"name": "cursor",
+						"required": false,
+						"schema": {
+							"type": "string"
+						}
+					}
+				]
+			}
+		},
+		"/reports": {
+			"post": {
+				"operationId": "Create",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/CreateReportResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "POST /reports",
+				"tags": [
+					"Reports"
+				],
+				"security": [
+					{
+						"cookieAuth": [
+							"auth.load_permissions",
+							"reports.create"
+						]
+					}
+				],
+				"parameters": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/CreateReportBodyDTO"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/admin/reports": {
+			"get": {
+				"operationId": "AdminList",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/AdminReportsListResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "GET /admin/reports",
+				"tags": [
+					"Reports"
+				],
+				"security": [
+					{
+						"cookieAuth": [
+							"auth.load_permissions",
+							"reports.admin_read"
+						]
+					}
+				],
+				"parameters": [
+					{
+						"in": "query",
+						"name": "limit",
+						"required": false,
+						"schema": {
+							"format": "double",
+							"type": "number"
+						}
+					},
+					{
+						"in": "query",
+						"name": "cursor",
+						"required": false,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
+						"name": "status",
+						"required": false,
+						"schema": {
+							"type": "string",
+							"enum": [
+								"pending",
+								"reviewing",
+								"resolved",
+								"rejected"
+							]
+						}
+					},
+					{
+						"in": "query",
+						"name": "type",
+						"required": false,
+						"schema": {
+							"type": "string",
+							"enum": [
+								"media",
+								"comment"
+							]
+						}
+					},
+					{
+						"in": "query",
+						"name": "order",
+						"required": false,
+						"schema": {
+							"type": "string",
+							"enum": [
+								"old",
+								"new"
+							]
+						}
+					}
+				]
+			}
+		},
+		"/admin/reports/targets": {
+			"get": {
+				"operationId": "AdminTargets",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/AdminReportTargetsResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "GET /admin/reports/targets",
+				"tags": [
+					"Reports"
+				],
+				"security": [
+					{
+						"cookieAuth": [
+							"auth.load_permissions",
+							"reports.admin_read"
+						]
+					}
+				],
+				"parameters": [
+					{
+						"in": "query",
+						"name": "limit",
+						"required": false,
+						"schema": {
+							"format": "double",
+							"type": "number"
+						}
+					},
+					{
+						"in": "query",
+						"name": "page",
+						"required": false,
+						"schema": {
+							"format": "double",
+							"type": "number"
+						}
+					},
+					{
+						"in": "query",
+						"name": "type",
+						"required": false,
+						"schema": {
+							"type": "string",
+							"enum": [
+								"media",
+								"comment"
+							]
+						}
+					},
+					{
+						"in": "query",
+						"name": "status",
+						"required": false,
+						"schema": {
+							"type": "string",
+							"enum": [
+								"pending",
+								"reviewing",
+								"resolved",
+								"rejected"
+							]
+						}
+					},
+					{
+						"in": "query",
+						"name": "order",
+						"required": false,
+						"schema": {
+							"type": "string",
+							"enum": [
+								"count_desc",
+								"count_asc",
+								"oldest_first",
+								"newest_first"
+							]
+						}
+					}
+				]
+			}
+		},
+		"/admin/reports/{id}": {
+			"patch": {
+				"operationId": "AdminPatch",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/AdminReportPatchResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "PATCH /admin/reports/:id",
+				"tags": [
+					"Reports"
+				],
+				"security": [
+					{
+						"cookieAuth": [
+							"auth.load_permissions",
+							"reports.admin_update"
+						]
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/AdminReportPatchBodyDTO"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/media/{id}/rating": {
+			"post": {
+				"operationId": "RateMedia",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/RateMediaResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "POST /media/:id/rating\nскрываем через permission",
+				"tags": [
+					"Ratings"
+				],
+				"security": [
+					{
+						"cookieAuth": [
+							"ratings.set"
+						]
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/SetRatingBodyDTO"
+							}
+						}
+					}
+				}
+			},
+			"delete": {
+				"operationId": "UnrateMedia",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/RateMediaResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "DELETE /media/:id/rating\nскрываем через permission",
+				"tags": [
+					"Ratings"
+				],
+				"security": [
+					{
+						"cookieAuth": [
+							"ratings.remove"
+						]
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				]
+			}
+		},
+		"/moderation/queue": {
+			"get": {
+				"operationId": "GetQueue",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ModerationQueueResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "GET /moderation/queue",
+				"tags": [
+					"Moderation"
+				],
+				"security": [
+					{
+						"cookieAuth": [
+							"auth.load_permissions",
+							"moderation.queue_read"
+						]
+					}
+				],
+				"parameters": [
+					{
+						"in": "query",
+						"name": "limit",
+						"required": false,
+						"schema": {
+							"format": "double",
+							"type": "number"
+						}
+					},
+					{
+						"in": "query",
+						"name": "cursor",
+						"required": false,
+						"schema": {
+							"type": "string"
+						}
+					}
+				]
+			}
+		},
+		"/moderation/media/{id}/approve": {
+			"post": {
+				"operationId": "Approve",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ModerationActionResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "POST /moderation/media/:id/approve",
+				"tags": [
+					"Moderation"
+				],
+				"security": [
+					{
+						"cookieAuth": [
+							"auth.load_permissions",
+							"moderation.media_approve"
+						]
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/ModerationActionBodyDTO"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/moderation/media/{id}/reject": {
+			"post": {
+				"operationId": "Reject",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ModerationActionResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "POST /moderation/media/:id/reject",
+				"tags": [
+					"Moderation"
+				],
+				"security": [
+					{
+						"cookieAuth": [
+							"auth.load_permissions",
+							"moderation.media_reject"
+						]
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/ModerationActionBodyDTO"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/media/{id}": {
+			"get": {
+				"operationId": "GetMedia",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/MediaVisibleDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "GET /media/:id\npublic, principal-aware (optional auth)",
+				"tags": [
+					"Media"
+				],
+				"security": [
+					{
+						"optionalCookieAuth": [
+							"auth.load_permissions"
+						]
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				]
+			}
+		},
+		"/media": {
+			"get": {
+				"operationId": "ListMedia",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/MediaListResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "GET /media\npublic, principal-aware (optional auth)",
+				"tags": [
+					"Media"
+				],
+				"security": [
+					{
+						"optionalCookieAuth": [
+							"auth.load_permissions"
+						]
+					}
+				],
+				"parameters": [
+					{
+						"in": "query",
+						"name": "limit",
+						"required": false,
+						"schema": {
+							"format": "double",
+							"type": "number"
+						}
+					},
+					{
+						"in": "query",
+						"name": "cursor",
+						"required": false,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
+						"name": "sort",
+						"required": false,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
+						"name": "type",
+						"required": false,
+						"schema": {
+							"type": "string"
+						}
+					}
+				]
+			}
+		},
+		"/media/upload": {
+			"post": {
+				"operationId": "UploadMedia",
+				"responses": {
+					"201": {
+						"description": "Created",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/MediaUploadDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "POST /media/upload\nauth required + perms + ban + restriction checks",
+				"tags": [
+					"Media"
+				],
+				"security": [
+					{
+						"cookieAuth": [
+							"auth.load_permissions",
+							"media.upload"
+						]
+					}
+				],
+				"parameters": [],
+				"requestBody": {
+					"required": false,
+					"content": {
+						"multipart/form-data": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"file": {
+										"type": "string",
+										"format": "binary"
+									},
+									"description": {
+										"type": "string"
+									},
+									"tags": {
+										"type": "string"
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/jobs": {
+			"get": {
+				"operationId": "ListJobs",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/JobsListResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "GET /jobs",
+				"tags": [
+					"Jobs"
+				],
+				"security": [
+					{
+						"cookieAuth": [
+							"auth.load_permissions",
+							"jobs.run"
+						]
+					}
+				],
+				"parameters": []
+			}
+		},
+		"/jobs/{name}/run": {
+			"post": {
+				"operationId": "RunJob",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/RunJobResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "POST /jobs/:name/run",
+				"tags": [
+					"Jobs"
+				],
+				"security": [
+					{
+						"cookieAuth": [
+							"auth.load_permissions",
+							"jobs.run"
+						]
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "name",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				]
+			}
+		},
+		"/media/{id}/favorite": {
+			"post": {
+				"operationId": "Favorite",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/OkDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "POST /media/:id/favorite",
+				"tags": [
+					"Favorites"
+				],
+				"security": [
+					{
+						"cookieAuth": [
+							"auth.load_permissions",
+							"favorites.add"
+						]
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				]
+			},
+			"delete": {
+				"operationId": "Unfavorite",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/OkDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "DELETE /media/:id/favorite",
+				"tags": [
+					"Favorites"
+				],
+				"security": [
+					{
+						"cookieAuth": [
+							"auth.load_permissions",
+							"favorites.remove"
+						]
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				]
+			}
+		},
+		"/media/{id}/comments": {
+			"get": {
+				"operationId": "ListComments",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/CommentsListResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "GET /media/:id/comments\nСкрываем эндпоинт через permission (если нет perms -> 401/403 на auth этапе)",
+				"tags": [
+					"Comments"
+				],
+				"security": [
+					{
+						"cookieAuth": [
+							"comments.read"
+						]
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
+						"name": "limit",
+						"required": false,
+						"schema": {
+							"format": "double",
+							"type": "number"
+						}
+					},
+					{
+						"in": "query",
+						"name": "cursor",
+						"required": false,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
+						"name": "sort",
+						"required": false,
+						"schema": {
+							"type": "string"
+						}
+					}
+				]
+			},
+			"post": {
+				"operationId": "CreateMediaComment",
+				"responses": {
+					"201": {
+						"description": "Created",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/CommentDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "POST /media/:id/comments",
+				"tags": [
+					"Comments"
+				],
+				"security": [
+					{
+						"cookieAuth": [
+							"comments.create"
+						]
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/CreateCommentBodyDTO"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/comments/{id}": {
+			"delete": {
+				"operationId": "DeleteCommentById",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/OkDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "DELETE /comments/:id\nany-of (own or any) -> поэтому только LOAD_PERMISSIONS, а дальше доменная проверка.",
+				"tags": [
+					"Comments"
+				],
+				"security": [
+					{
+						"cookieAuth": [
+							"auth.load_permissions"
+						]
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/DeleteCommentBodyDTO"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/comics": {
+			"post": {
+				"operationId": "CreateComic",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ComicResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "POST /comics\nauth required + not banned + permissions loaded",
+				"tags": [
+					"Comics"
+				],
+				"security": [
+					{
+						"cookieAuth": [
+							"auth.load_permissions",
+							"comics.create"
+						]
+					}
+				],
+				"parameters": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/CreateComicBodyDTO"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/comics/{id}": {
+			"get": {
+				"operationId": "GetComic",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ComicResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "GET /comics/:id\nauth required + perms loaded",
+				"tags": [
+					"Comics"
+				],
+				"security": [
+					{
+						"cookieAuth": [
+							"auth.load_permissions"
+						]
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				]
+			},
+			"patch": {
+				"operationId": "UpdateComic",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ComicResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "PATCH /comics/:id",
+				"tags": [
+					"Comics"
+				],
+				"security": [
+					{
+						"cookieAuth": [
+							"auth.load_permissions"
+						]
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/UpdateComicBodyDTO"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/comics/{id}/pages": {
+			"post": {
+				"operationId": "AddComicPage",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ComicResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "POST /comics/:id/pages",
+				"tags": [
+					"Comics"
+				],
+				"security": [
+					{
+						"cookieAuth": [
+							"auth.load_permissions"
+						]
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/AddComicPageBodyDTO"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/comics/{id}/pages/{mediaId}": {
+			"delete": {
+				"operationId": "RemoveComicPage",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/OkResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "DELETE /comics/:id/pages/:mediaId",
+				"tags": [
+					"Comics"
+				],
+				"security": [
+					{
+						"cookieAuth": [
+							"auth.load_permissions"
+						]
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "path",
+						"name": "mediaId",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				]
+			}
+		},
+		"/comics/{id}/pages/reorder": {
+			"post": {
+				"operationId": "ReorderPages",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/OkResponseDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "POST /comics/:id/pages/reorder",
+				"tags": [
+					"Comics"
+				],
+				"security": [
+					{
+						"cookieAuth": [
+							"auth.load_permissions"
+						]
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/ReorderComicPagesBodyDTO"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/auth/register": {
+			"post": {
+				"operationId": "Register",
+				"responses": {
+					"201": {
+						"description": "Created",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/AuthResponseDTO"
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Validation error",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorEnvelopeDTO"
+								},
+								"examples": {
+									"Example 1": {
+										"value": {
+											"error": {
+												"code": "VALIDATION_ERROR",
+												"message": "Invalid request",
+												"details": {
+													"issues": [
+														{
+															"path": [
+																"email"
+															],
+															"message": "Invalid email"
+														}
+													]
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				},
+				"tags": [
+					"Auth"
+				],
+				"security": [],
+				"parameters": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/RegisterBodyDTO"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/auth/login": {
+			"post": {
+				"operationId": "Login",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/AuthResponseDTO"
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Validation error",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorEnvelopeDTO"
+								},
+								"examples": {
+									"Example 1": {
+										"value": {
+											"error": {
+												"code": "VALIDATION_ERROR",
+												"message": "Invalid request",
+												"details": {
+													"issues": [
+														{
+															"path": [
+																"email"
+															],
+															"message": "Invalid email"
+														}
+													]
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Invalid credentials",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorEnvelopeDTO"
+								},
+								"examples": {
+									"Example 1": {
+										"value": {
+											"error": {
+												"code": "INVALID_CREDENTIALS",
+												"message": "Invalid email or password"
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				},
+				"tags": [
+					"Auth"
+				],
+				"security": [],
+				"parameters": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/LoginBodyDTO"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/auth/refresh": {
+			"post": {
+				"operationId": "Refresh",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/OkDTO"
+								}
+							}
+						}
+					}
+				},
+				"tags": [
+					"Auth"
+				],
+				"security": [],
+				"parameters": []
+			}
+		},
+		"/auth/logout": {
+			"post": {
+				"operationId": "Logout",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/OkDTO"
+								}
+							}
+						}
+					}
+				},
+				"tags": [
+					"Auth"
+				],
+				"security": [
+					{
+						"cookieAuth": []
+					}
+				],
+				"parameters": []
+			}
+		}
+	},
+	"servers": [
+		{
+			"url": "/"
+		}
+	]
+}

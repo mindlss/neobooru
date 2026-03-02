@@ -4,15 +4,17 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
+    "gen:api": "orval --config orval.config.ts",
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "npm run gen:api && tsc -b && vite build",
     "lint": "eslint --max-warnings=0 src",
     "preview": "vite preview"
   },
   "dependencies": {
     "@emotion/react": "^11.13.5",
     "@emotion/styled": "^11.13.5",
-    "axios": "^1.7.7",
+    "@tanstack/react-query": "^5.90.21",
+    "axios": "^1.13.6",
     "framer-motion": "^12.23.26",
     "pdfjs-dist": "^5.4.449",
     "react": "^18.3.1",
@@ -34,6 +36,7 @@
     "eslint-plugin-react-hooks": "^5.1.0-rc.0",
     "eslint-plugin-react-refresh": "^0.4.9",
     "globals": "^15.9.0",
+    "orval": "^8.5.1",
     "prettier": "3.3.3",
     "typescript": "^5.5.2",
     "typescript-eslint": "^8.0.1",

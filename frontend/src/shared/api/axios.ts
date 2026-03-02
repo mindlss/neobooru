@@ -1,5 +1,6 @@
-import axios from 'axios'
+import axios from 'axios';
 
-export const instance = axios.create({
-  baseURL: 'http://192.168.0.1:3000',
-})
+export const api = axios.create({
+    baseURL: import.meta.env.VITE_API_BASE_URL as string,
+    withCredentials: true,
+});

@@ -2,6 +2,7 @@ import { ReactNode } from 'react'
 import { ReactStrictModeProvider } from './ReactStrictModeProvider'
 import { RouterProvider } from './RouterProvider'
 import { ToastProvider } from './ToastProvider'
+import { QueryProvider } from './QueryProvider'
 
 interface CombinedProvidersProps {
   children: ReactNode
@@ -9,12 +10,14 @@ interface CombinedProvidersProps {
 
 export const CombinedProviders = ({ children }: CombinedProvidersProps) => {
   return (
-    <ReactStrictModeProvider>
-      <RouterProvider>
-        <ToastProvider>
-          {children}
-        </ToastProvider>
-      </RouterProvider>
-    </ReactStrictModeProvider>
+    <QueryProvider>
+      <ReactStrictModeProvider>
+        <RouterProvider>
+          <ToastProvider>
+            {children}
+          </ToastProvider>
+        </RouterProvider>
+      </ReactStrictModeProvider>
+    </QueryProvider>
   )
 }
