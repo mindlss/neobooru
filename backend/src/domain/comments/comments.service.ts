@@ -1,50 +1,52 @@
 import { prisma } from '../../lib/prisma';
-import { ModerationStatus, UserRole, CommentDeletedKind } from '@prisma/client';
+import { ModerationStatus, CommentDeletedKind } from '@prisma/client';
 
-type Viewer = { id?: string; role: UserRole; isAdult: boolean } | undefined;
+import type { PrincipalLike } from '../auth/permission.utils';
+import {
+    hasPermission,
+    assertPermission,
+    assertAnyPermission,
+} from '../auth/permission.utils';
+import { Permission } from '../auth/permissions';
 
-function isModerator(viewer: Viewer) {
-    return (
-        viewer?.role === UserRole.MODERATOR || viewer?.role === UserRole.ADMIN
-    );
-}
+function buildMediaVisibilityWhere(p: PrincipalLike | undefined) {
+    const where: any = {};
 
-function isGuest(viewer: Viewer) {
-    return !viewer || viewer.role === UserRole.GUEST;
-}
-
-function buildVisibilityWhere(viewer: Viewer) {
-    if (isModerator(viewer)) return {};
-
-    if (isGuest(viewer)) {
-        return {
-            deletedAt: null,
-            moderationStatus: ModerationStatus.APPROVED,
-            isExplicit: false,
-        };
+    // deleted media
+    if (!hasPermission(p, Permission.MEDIA_READ_DELETED)) {
+        where.deletedAt = null;
     }
 
-    const base: any = {
-        deletedAt: null,
-        moderationStatus: { not: ModerationStatus.REJECTED },
-    };
+    // moderation visibility
+    if (!hasPermission(p, Permission.MEDIA_READ_UNMODERATED)) {
+        // only APPROVED is visible
+        where.moderationStatus = ModerationStatus.APPROVED;
+    }
 
-    if (!viewer?.isAdult) base.isExplicit = false;
+    // explicit visibility
+    if (!hasPermission(p, Permission.MEDIA_READ_EXPLICIT)) {
+        where.isExplicit = false;
+    }
 
-    return base;
+    return where;
 }
 
 export async function listCommentsForMedia(params: {
     mediaId: string;
-    viewer: Viewer;
+    principal: PrincipalLike | undefined;
     limit: number;
     cursor?: string;
     sort: 'new' | 'old';
 }) {
+    assertPermission(params.principal, Permission.COMMENTS_READ);
+
     const take = Math.min(Math.max(params.limit, 1), 100);
 
     const media = await prisma.media.findFirst({
-        where: { id: params.mediaId, ...buildVisibilityWhere(params.viewer) },
+        where: {
+            id: params.mediaId,
+            ...buildMediaVisibilityWhere(params.principal),
+        },
         select: { id: true },
     });
     if (!media) return { kind: 'not_found' as const };
@@ -76,7 +78,6 @@ export async function listCommentsForMedia(params: {
                 select: {
                     id: true,
                     username: true,
-                    role: true,
                     avatarKey: true,
                 },
             },
@@ -91,16 +92,18 @@ export async function listCommentsForMedia(params: {
 
 export async function createComment(params: {
     mediaId: string;
+    principal: PrincipalLike | undefined;
     userId: string;
-    viewer: Viewer;
     content: string;
     parentId?: string | null;
 }) {
+    assertPermission(params.principal, Permission.COMMENTS_CREATE);
+
     return prisma.$transaction(async (tx) => {
         const media = await tx.media.findFirst({
             where: {
                 id: params.mediaId,
-                ...buildVisibilityWhere(params.viewer),
+                ...buildMediaVisibilityWhere(params.principal),
             },
             select: { id: true },
         });
@@ -141,7 +144,6 @@ export async function createComment(params: {
                     select: {
                         id: true,
                         username: true,
-                        role: true,
                         avatarKey: true,
                     },
                 },
@@ -159,9 +161,16 @@ export async function createComment(params: {
 
 export async function softDeleteComment(params: {
     commentId: string;
-    requester: { id: string; role: UserRole };
+    principal: PrincipalLike | undefined;
+    requesterId: string;
     reason?: string;
 }) {
+    // delete endpoint не может быть "скрыт" через @Security(requiredPerms)
+    assertAnyPermission(params.principal, [
+        Permission.COMMENTS_DELETE_OWN,
+        Permission.COMMENTS_DELETE_ANY,
+    ]);
+
     return prisma.$transaction(async (tx) => {
         const comment = await tx.comment.findUnique({
             where: { id: params.commentId },
@@ -174,23 +183,32 @@ export async function softDeleteComment(params: {
         });
 
         if (!comment) throw new Error('NOT_FOUND');
-
         if (comment.deletedAt) return { ok: true };
 
-        const requesterIsMod =
-            params.requester.role === UserRole.MODERATOR ||
-            params.requester.role === UserRole.ADMIN;
+        const isOwner = comment.userId === params.requesterId;
 
-        const isOwner = comment.userId === params.requester.id;
+        const canDeleteAny = hasPermission(
+            params.principal,
+            Permission.COMMENTS_DELETE_ANY,
+        );
 
-        if (!isOwner && !requesterIsMod) throw new Error('FORBIDDEN');
+        const canDeleteOwn = hasPermission(
+            params.principal,
+            Permission.COMMENTS_DELETE_OWN,
+        );
+
+        if (isOwner) {
+            if (!canDeleteOwn && !canDeleteAny) throw new Error('FORBIDDEN');
+        } else {
+            if (!canDeleteAny) throw new Error('FORBIDDEN');
+        }
 
         const deletedKind = isOwner
             ? CommentDeletedKind.USER
             : CommentDeletedKind.MODERATOR;
 
         const deletedReason =
-            requesterIsMod && !isOwner
+            !isOwner && canDeleteAny
                 ? params.reason?.trim().slice(0, 2000) || null
                 : null;
 
@@ -198,7 +216,7 @@ export async function softDeleteComment(params: {
             where: { id: comment.id },
             data: {
                 deletedAt: new Date(),
-                deletedById: params.requester.id,
+                deletedById: params.requesterId,
                 deletedKind,
                 deletedReason,
             },

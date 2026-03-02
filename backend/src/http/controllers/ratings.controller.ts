@@ -15,7 +15,9 @@ import { RestrictionType } from '@prisma/client';
 
 import { apiError } from '../errors/ApiError';
 import { requireCurrentUser } from '../tsoa/context';
-import { requireNotBanned, requireNoActiveRestriction } from '../tsoa/guards';
+import { requireNotBanned } from '../tsoa/guards';
+
+import { prisma } from '../../lib/prisma';
 
 import { mediaIdParamsSchema } from '../schemas/media.schemas';
 import { setRatingSchema } from '../schemas/ratings.schemas';
@@ -27,31 +29,64 @@ import type {
     SetRatingBodyDTO,
 } from '../dto/ratings.dto';
 
+import { Permission } from '../../domain/auth/permissions';
+
+async function requireNoActiveRestriction(
+    userId: string,
+    types: RestrictionType[],
+) {
+    const now = new Date();
+
+    const restriction = await prisma.restriction.findFirst({
+        where: {
+            userId,
+            isActive: true,
+            type: { in: types },
+        },
+        orderBy: { issuedAt: 'desc' },
+    });
+
+    if (!restriction) return;
+
+    if (restriction.expiresAt && restriction.expiresAt <= now) {
+        await prisma.restriction.update({
+            where: { id: restriction.id },
+            data: { isActive: false, revokedAt: now },
+        });
+        return;
+    }
+
+    throw apiError(403, 'RESTRICTED', 'Action is restricted', {
+        restriction: {
+            type: restriction.type,
+            reason: restriction.reason,
+            customReason: restriction.customReason,
+            expiresAt: restriction.expiresAt,
+        },
+    });
+}
+
 @Route('media')
 @Tags('Ratings')
 export class RatingsController extends Controller {
     /**
      * POST /media/:id/rating
+     * скрываем через permission
      */
     @Post('{id}/rating')
-    @Security('cookieAuth')
+    @Security('cookieAuth', [Permission.RATINGS_SET])
     public async rateMedia(
         @Path() id: string,
         @Body() body: SetRatingBodyDTO,
         @Request() req: ExpressRequest,
     ): Promise<RateMediaResponseDTO> {
         await requireCurrentUser(req);
-
         requireNotBanned(req.currentUser);
 
-        await requireNoActiveRestriction(req.currentUser?.id, [
+        await requireNoActiveRestriction(req.currentUser!.id, [
             RestrictionType.RATING_BAN,
             RestrictionType.FULL_BAN,
         ]);
-
-        if (!req.viewer?.id) {
-            throw apiError(500, 'INTERNAL_SERVER_ERROR', 'viewer not loaded');
-        }
 
         const params = mediaIdParamsSchema.parse({ id });
         const parsedBody = setRatingSchema.parse(body);
@@ -61,11 +96,7 @@ export class RatingsController extends Controller {
                 mediaId: params.id,
                 userId: req.currentUser!.id,
                 value: parsedBody.value,
-                viewer: {
-                    id: req.viewer.id,
-                    role: req.viewer.role,
-                    isAdult: req.viewer.isAdult,
-                },
+                principal: req.user,
             });
 
             return { status: 'ok', ...result };
@@ -79,25 +110,21 @@ export class RatingsController extends Controller {
 
     /**
      * DELETE /media/:id/rating
+     * скрываем через permission
      */
     @Delete('{id}/rating')
-    @Security('cookieAuth')
+    @Security('cookieAuth', [Permission.RATINGS_REMOVE])
     public async unrateMedia(
         @Path() id: string,
         @Request() req: ExpressRequest,
     ): Promise<RateMediaResponseDTO> {
         await requireCurrentUser(req);
-
         requireNotBanned(req.currentUser);
 
-        await requireNoActiveRestriction(req.currentUser?.id, [
+        await requireNoActiveRestriction(req.currentUser!.id, [
             RestrictionType.RATING_BAN,
             RestrictionType.FULL_BAN,
         ]);
-
-        if (!req.viewer?.id) {
-            throw apiError(500, 'INTERNAL_SERVER_ERROR', 'viewer not loaded');
-        }
 
         const params = mediaIdParamsSchema.parse({ id });
 
@@ -105,11 +132,7 @@ export class RatingsController extends Controller {
             const result = await removeRating({
                 mediaId: params.id,
                 userId: req.currentUser!.id,
-                viewer: {
-                    id: req.viewer.id,
-                    role: req.viewer.role,
-                    isAdult: req.viewer.isAdult,
-                },
+                principal: req.user,
             });
 
             return { status: 'ok', ...result };

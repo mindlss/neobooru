@@ -39,19 +39,14 @@ const expressAuthenticationRecasted = expressAuthentication as (req: ExRequest, 
 // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 
 const models: TsoaRoute.Models = {
-    "_36_Enums.UserRole": {
+    "UserSelfDTO": {
         "dataType": "refAlias",
-        "type": {"dataType":"union","subSchemas":[{"dataType":"enum","enums":["GUEST"]},{"dataType":"enum","enums":["UNVERIFIED"]},{"dataType":"enum","enums":["USER"]},{"dataType":"enum","enums":["TRUSTED"]},{"dataType":"enum","enums":["MODERATOR"]},{"dataType":"enum","enums":["ADMIN"]}],"validators":{}},
-    },
-    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
-    "UserRole": {
-        "dataType": "refAlias",
-        "type": {"ref":"_36_Enums.UserRole","validators":{}},
+        "type": {"dataType":"nestedObjectLiteral","nestedProperties":{"permissions":{"dataType":"array","array":{"dataType":"string"}},"roles":{"dataType":"array","array":{"dataType":"string"}},"isBanned":{"dataType":"boolean","required":true},"warningCount":{"dataType":"double","required":true},"uploadCount":{"dataType":"double","required":true},"showUploads":{"dataType":"boolean","required":true},"showFavorites":{"dataType":"boolean","required":true},"showRatings":{"dataType":"boolean","required":true},"showComments":{"dataType":"boolean","required":true},"emailVerifiedAt":{"dataType":"union","subSchemas":[{"dataType":"string"},{"dataType":"enum","enums":[null]}],"required":true},"updatedAt":{"dataType":"string","required":true},"createdAt":{"dataType":"string","required":true},"website":{"dataType":"union","subSchemas":[{"dataType":"string"},{"dataType":"enum","enums":[null]}],"required":true},"bio":{"dataType":"union","subSchemas":[{"dataType":"string"},{"dataType":"enum","enums":[null]}],"required":true},"avatarUrl":{"dataType":"union","subSchemas":[{"dataType":"string"},{"dataType":"enum","enums":[null]}],"required":true},"birthDate":{"dataType":"union","subSchemas":[{"dataType":"string"},{"dataType":"enum","enums":[null]}],"required":true},"email":{"dataType":"string","required":true},"username":{"dataType":"string","required":true},"id":{"dataType":"string","required":true}},"validators":{}},
     },
     // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
     "UserPublicDTO": {
         "dataType": "refAlias",
-        "type": {"dataType":"nestedObjectLiteral","nestedProperties":{"createdAt":{"dataType":"string","required":true},"website":{"dataType":"union","subSchemas":[{"dataType":"string"},{"dataType":"enum","enums":[null]}],"required":true},"bio":{"dataType":"union","subSchemas":[{"dataType":"string"},{"dataType":"enum","enums":[null]}],"required":true},"avatarUrl":{"dataType":"union","subSchemas":[{"dataType":"string"},{"dataType":"enum","enums":[null]}],"required":true},"role":{"ref":"UserRole","required":true},"username":{"dataType":"string","required":true},"id":{"dataType":"string","required":true}},"validators":{}},
+        "type": {"dataType":"nestedObjectLiteral","nestedProperties":{"createdAt":{"dataType":"string","required":true},"website":{"dataType":"union","subSchemas":[{"dataType":"string"},{"dataType":"enum","enums":[null]}],"required":true},"bio":{"dataType":"union","subSchemas":[{"dataType":"string"},{"dataType":"enum","enums":[null]}],"required":true},"avatarUrl":{"dataType":"union","subSchemas":[{"dataType":"string"},{"dataType":"enum","enums":[null]}],"required":true},"username":{"dataType":"string","required":true},"id":{"dataType":"string","required":true}},"validators":{}},
     },
     // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
     "TagPublicDTO": {
@@ -96,7 +91,7 @@ const models: TsoaRoute.Models = {
     // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
     "CommentAuthorDTO": {
         "dataType": "refAlias",
-        "type": {"dataType":"nestedObjectLiteral","nestedProperties":{"role":{"ref":"UserRole","required":true},"username":{"dataType":"string","required":true},"id":{"dataType":"string","required":true}},"validators":{}},
+        "type": {"dataType":"nestedObjectLiteral","nestedProperties":{"username":{"dataType":"string","required":true},"id":{"dataType":"string","required":true}},"validators":{}},
     },
     // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
     "CommentDTO": {
@@ -117,11 +112,6 @@ const models: TsoaRoute.Models = {
     "UserRatingsListResponseDTO": {
         "dataType": "refAlias",
         "type": {"dataType":"nestedObjectLiteral","nestedProperties":{"nextCursor":{"dataType":"union","subSchemas":[{"dataType":"string"},{"dataType":"enum","enums":[null]}],"required":true},"data":{"dataType":"array","array":{"dataType":"refAlias","ref":"UserRatingItemDTO"},"required":true}},"validators":{}},
-    },
-    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
-    "UserSelfDTO": {
-        "dataType": "refAlias",
-        "type": {"dataType":"nestedObjectLiteral","nestedProperties":{"isBanned":{"dataType":"boolean","required":true},"warningCount":{"dataType":"double","required":true},"uploadCount":{"dataType":"double","required":true},"showUploads":{"dataType":"boolean","required":true},"showFavorites":{"dataType":"boolean","required":true},"showRatings":{"dataType":"boolean","required":true},"showComments":{"dataType":"boolean","required":true},"emailVerifiedAt":{"dataType":"union","subSchemas":[{"dataType":"string"},{"dataType":"enum","enums":[null]}],"required":true},"updatedAt":{"dataType":"string","required":true},"createdAt":{"dataType":"string","required":true},"website":{"dataType":"union","subSchemas":[{"dataType":"string"},{"dataType":"enum","enums":[null]}],"required":true},"bio":{"dataType":"union","subSchemas":[{"dataType":"string"},{"dataType":"enum","enums":[null]}],"required":true},"avatarUrl":{"dataType":"union","subSchemas":[{"dataType":"string"},{"dataType":"enum","enums":[null]}],"required":true},"birthDate":{"dataType":"union","subSchemas":[{"dataType":"string"},{"dataType":"enum","enums":[null]}],"required":true},"role":{"ref":"UserRole","required":true},"email":{"dataType":"string","required":true},"username":{"dataType":"string","required":true},"id":{"dataType":"string","required":true}},"validators":{}},
     },
     // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
     "TagSuggestDTO": {
@@ -407,12 +397,43 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
     const upload = opts?.multer ||  multer({"limits":{"fileSize":8388608}});
 
     
+        const argsUsersController_getMe: Record<string, TsoaRoute.ParameterSchema> = {
+                req: {"in":"request","name":"req","required":true,"dataType":"object"},
+        };
+        app.get('/users/me',
+            authenticateMiddleware([{"cookieAuth":["auth.load_permissions"]}]),
+            ...(fetchMiddlewares<RequestHandler>(UsersController)),
+            ...(fetchMiddlewares<RequestHandler>(UsersController.prototype.getMe)),
+
+            async function UsersController_getMe(request: ExRequest, response: ExResponse, next: any) {
+
+            // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+
+            let validatedArgs: any[] = [];
+            try {
+                validatedArgs = templateService.getValidatedArgs({ args: argsUsersController_getMe, request, response });
+
+                const controller = new UsersController();
+
+              await templateService.apiHandler({
+                methodName: 'getMe',
+                controller,
+                response,
+                next,
+                validatedArgs,
+                successStatus: undefined,
+              });
+            } catch (err) {
+                return next(err);
+            }
+        });
+        // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
         const argsUsersController_getUserPublic: Record<string, TsoaRoute.ParameterSchema> = {
                 id: {"in":"path","name":"id","required":true,"dataType":"string"},
                 req: {"in":"request","name":"req","required":true,"dataType":"object"},
         };
         app.get('/users/:id',
-            authenticateMiddleware([{"optionalCookieAuth":[]}]),
+            authenticateMiddleware([{"optionalCookieAuth":["auth.load_permissions","users.read"]}]),
             ...(fetchMiddlewares<RequestHandler>(UsersController)),
             ...(fetchMiddlewares<RequestHandler>(UsersController.prototype.getUserPublic)),
 
@@ -448,7 +469,7 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
                 type: {"in":"query","name":"type","dataType":"union","subSchemas":[{"dataType":"enum","enums":["IMAGE"]},{"dataType":"enum","enums":["VIDEO"]}]},
         };
         app.get('/users/:id/uploads',
-            authenticateMiddleware([{"optionalCookieAuth":[]}]),
+            authenticateMiddleware([{"optionalCookieAuth":["auth.load_permissions","users.read"]}]),
             ...(fetchMiddlewares<RequestHandler>(UsersController)),
             ...(fetchMiddlewares<RequestHandler>(UsersController.prototype.getUserUploads)),
 
@@ -484,7 +505,7 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
                 type: {"in":"query","name":"type","dataType":"union","subSchemas":[{"dataType":"enum","enums":["IMAGE"]},{"dataType":"enum","enums":["VIDEO"]}]},
         };
         app.get('/users/:id/favorites',
-            authenticateMiddleware([{"optionalCookieAuth":[]}]),
+            authenticateMiddleware([{"optionalCookieAuth":["auth.load_permissions","users.read"]}]),
             ...(fetchMiddlewares<RequestHandler>(UsersController)),
             ...(fetchMiddlewares<RequestHandler>(UsersController.prototype.getUserFavorites)),
 
@@ -519,7 +540,7 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
                 sort: {"in":"query","name":"sort","dataType":"union","subSchemas":[{"dataType":"enum","enums":["new"]},{"dataType":"enum","enums":["old"]}]},
         };
         app.get('/users/:id/comments',
-            authenticateMiddleware([{"optionalCookieAuth":[]}]),
+            authenticateMiddleware([{"optionalCookieAuth":["auth.load_permissions","users.read"]}]),
             ...(fetchMiddlewares<RequestHandler>(UsersController)),
             ...(fetchMiddlewares<RequestHandler>(UsersController.prototype.getUserComments)),
 
@@ -555,7 +576,7 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
                 type: {"in":"query","name":"type","dataType":"union","subSchemas":[{"dataType":"enum","enums":["IMAGE"]},{"dataType":"enum","enums":["VIDEO"]}]},
         };
         app.get('/users/:id/ratings',
-            authenticateMiddleware([{"optionalCookieAuth":[]}]),
+            authenticateMiddleware([{"optionalCookieAuth":["auth.load_permissions","users.read"]}]),
             ...(fetchMiddlewares<RequestHandler>(UsersController)),
             ...(fetchMiddlewares<RequestHandler>(UsersController.prototype.getUserRatings)),
 
@@ -582,43 +603,12 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
             }
         });
         // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
-        const argsUsersController_getMe: Record<string, TsoaRoute.ParameterSchema> = {
-                req: {"in":"request","name":"req","required":true,"dataType":"object"},
-        };
-        app.get('/users/me',
-            authenticateMiddleware([{"cookieAuth":[]}]),
-            ...(fetchMiddlewares<RequestHandler>(UsersController)),
-            ...(fetchMiddlewares<RequestHandler>(UsersController.prototype.getMe)),
-
-            async function UsersController_getMe(request: ExRequest, response: ExResponse, next: any) {
-
-            // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
-
-            let validatedArgs: any[] = [];
-            try {
-                validatedArgs = templateService.getValidatedArgs({ args: argsUsersController_getMe, request, response });
-
-                const controller = new UsersController();
-
-              await templateService.apiHandler({
-                methodName: 'getMe',
-                controller,
-                response,
-                next,
-                validatedArgs,
-                successStatus: undefined,
-              });
-            } catch (err) {
-                return next(err);
-            }
-        });
-        // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
         const argsUsersController_patchMe: Record<string, TsoaRoute.ParameterSchema> = {
                 req: {"in":"request","name":"req","required":true,"dataType":"object"},
                 body: {"in":"body","name":"body","required":true,"dataType":"any"},
         };
         app.patch('/users/me',
-            authenticateMiddleware([{"cookieAuth":[]}]),
+            authenticateMiddleware([{"cookieAuth":["auth.load_permissions","users.update_self"]}]),
             ...(fetchMiddlewares<RequestHandler>(UsersController)),
             ...(fetchMiddlewares<RequestHandler>(UsersController.prototype.patchMe)),
 
@@ -650,7 +640,7 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
                 avatar: {"in":"formData","name":"avatar","dataType":"file"},
         };
         app.post('/users/me/avatar',
-            authenticateMiddleware([{"cookieAuth":[]}]),
+            authenticateMiddleware([{"cookieAuth":["auth.load_permissions","users.avatar_update_self"]}]),
             upload.fields([
                 {
                     name: "avatar",
@@ -689,7 +679,7 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
                 limit: {"in":"query","name":"limit","dataType":"double"},
         };
         app.get('/tags/search',
-            authenticateMiddleware([{"optionalCookieAuth":[]}]),
+            authenticateMiddleware([{"optionalCookieAuth":["auth.load_permissions"]}]),
             ...(fetchMiddlewares<RequestHandler>(TagsController)),
             ...(fetchMiddlewares<RequestHandler>(TagsController.prototype.search)),
 
@@ -721,7 +711,7 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
                 limit: {"in":"query","name":"limit","dataType":"double"},
         };
         app.get('/tags/popular',
-            authenticateMiddleware([{"optionalCookieAuth":[]}]),
+            authenticateMiddleware([{"optionalCookieAuth":["auth.load_permissions"]}]),
             ...(fetchMiddlewares<RequestHandler>(TagsController)),
             ...(fetchMiddlewares<RequestHandler>(TagsController.prototype.popular)),
 
@@ -753,7 +743,7 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
                 req: {"in":"request","name":"req","required":true,"dataType":"object"},
         };
         app.post('/tags',
-            authenticateMiddleware([{"cookieAuth":[]}]),
+            authenticateMiddleware([{"cookieAuth":["auth.load_permissions","tags.manage"]}]),
             ...(fetchMiddlewares<RequestHandler>(TagsController)),
             ...(fetchMiddlewares<RequestHandler>(TagsController.prototype.create)),
 
@@ -786,7 +776,7 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
                 req: {"in":"request","name":"req","required":true,"dataType":"object"},
         };
         app.patch('/tags/:id',
-            authenticateMiddleware([{"cookieAuth":[]}]),
+            authenticateMiddleware([{"cookieAuth":["auth.load_permissions","tags.manage"]}]),
             ...(fetchMiddlewares<RequestHandler>(TagsController)),
             ...(fetchMiddlewares<RequestHandler>(TagsController.prototype.patch)),
 
@@ -818,7 +808,7 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
                 req: {"in":"request","name":"req","required":true,"dataType":"object"},
         };
         app.get('/tags/:id/aliases',
-            authenticateMiddleware([{"cookieAuth":[]}]),
+            authenticateMiddleware([{"cookieAuth":["auth.load_permissions","tags.aliases_manage"]}]),
             ...(fetchMiddlewares<RequestHandler>(TagsController)),
             ...(fetchMiddlewares<RequestHandler>(TagsController.prototype.listTagAliases)),
 
@@ -851,7 +841,7 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
                 req: {"in":"request","name":"req","required":true,"dataType":"object"},
         };
         app.post('/tags/:id/aliases',
-            authenticateMiddleware([{"cookieAuth":[]}]),
+            authenticateMiddleware([{"cookieAuth":["auth.load_permissions","tags.aliases_manage"]}]),
             ...(fetchMiddlewares<RequestHandler>(TagsController)),
             ...(fetchMiddlewares<RequestHandler>(TagsController.prototype.createTagAlias)),
 
@@ -883,7 +873,7 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
                 req: {"in":"request","name":"req","required":true,"dataType":"object"},
         };
         app.delete('/tags/aliases/:id',
-            authenticateMiddleware([{"cookieAuth":[]}]),
+            authenticateMiddleware([{"cookieAuth":["auth.load_permissions","tags.aliases_manage"]}]),
             ...(fetchMiddlewares<RequestHandler>(TagsController)),
             ...(fetchMiddlewares<RequestHandler>(TagsController.prototype.deleteTagAlias)),
 
@@ -916,7 +906,7 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
                 req: {"in":"request","name":"req","required":true,"dataType":"object"},
         };
         app.post('/media/:id/tags',
-            authenticateMiddleware([{"cookieAuth":[]}]),
+            authenticateMiddleware([{"cookieAuth":["auth.load_permissions"]}]),
             ...(fetchMiddlewares<RequestHandler>(TagsController)),
             ...(fetchMiddlewares<RequestHandler>(TagsController.prototype.setTags)),
 
@@ -949,7 +939,7 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
                 req: {"in":"request","name":"req","required":true,"dataType":"object"},
         };
         app.post('/media/:id/tags/add',
-            authenticateMiddleware([{"cookieAuth":[]}]),
+            authenticateMiddleware([{"cookieAuth":["auth.load_permissions"]}]),
             ...(fetchMiddlewares<RequestHandler>(TagsController)),
             ...(fetchMiddlewares<RequestHandler>(TagsController.prototype.addTags)),
 
@@ -982,7 +972,7 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
                 req: {"in":"request","name":"req","required":true,"dataType":"object"},
         };
         app.post('/media/:id/tags/remove',
-            authenticateMiddleware([{"cookieAuth":[]}]),
+            authenticateMiddleware([{"cookieAuth":["auth.load_permissions"]}]),
             ...(fetchMiddlewares<RequestHandler>(TagsController)),
             ...(fetchMiddlewares<RequestHandler>(TagsController.prototype.removeTags)),
 
@@ -1016,7 +1006,7 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
                 cursor: {"in":"query","name":"cursor","dataType":"string"},
         };
         app.get('/search',
-            authenticateMiddleware([{"optionalCookieAuth":[]}]),
+            authenticateMiddleware([{"optionalCookieAuth":["auth.load_permissions"]}]),
             ...(fetchMiddlewares<RequestHandler>(SearchController)),
             ...(fetchMiddlewares<RequestHandler>(SearchController.prototype.search)),
 
@@ -1048,7 +1038,7 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
                 req: {"in":"request","name":"req","required":true,"dataType":"object"},
         };
         app.post('/reports',
-            authenticateMiddleware([{"cookieAuth":[]}]),
+            authenticateMiddleware([{"cookieAuth":["auth.load_permissions","reports.create"]}]),
             ...(fetchMiddlewares<RequestHandler>(ReportsController)),
             ...(fetchMiddlewares<RequestHandler>(ReportsController.prototype.create)),
 
@@ -1084,7 +1074,7 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
                 order: {"in":"query","name":"order","dataType":"union","subSchemas":[{"dataType":"enum","enums":["old"]},{"dataType":"enum","enums":["new"]}]},
         };
         app.get('/admin/reports',
-            authenticateMiddleware([{"cookieAuth":[]}]),
+            authenticateMiddleware([{"cookieAuth":["auth.load_permissions","reports.admin_read"]}]),
             ...(fetchMiddlewares<RequestHandler>(ReportsController)),
             ...(fetchMiddlewares<RequestHandler>(ReportsController.prototype.adminList)),
 
@@ -1120,7 +1110,7 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
                 order: {"in":"query","name":"order","dataType":"union","subSchemas":[{"dataType":"enum","enums":["count_desc"]},{"dataType":"enum","enums":["count_asc"]},{"dataType":"enum","enums":["oldest_first"]},{"dataType":"enum","enums":["newest_first"]}]},
         };
         app.get('/admin/reports/targets',
-            authenticateMiddleware([{"cookieAuth":[]}]),
+            authenticateMiddleware([{"cookieAuth":["auth.load_permissions","reports.admin_read"]}]),
             ...(fetchMiddlewares<RequestHandler>(ReportsController)),
             ...(fetchMiddlewares<RequestHandler>(ReportsController.prototype.adminTargets)),
 
@@ -1153,7 +1143,7 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
                 req: {"in":"request","name":"req","required":true,"dataType":"object"},
         };
         app.patch('/admin/reports/:id',
-            authenticateMiddleware([{"cookieAuth":[]}]),
+            authenticateMiddleware([{"cookieAuth":["auth.load_permissions","reports.admin_update"]}]),
             ...(fetchMiddlewares<RequestHandler>(ReportsController)),
             ...(fetchMiddlewares<RequestHandler>(ReportsController.prototype.adminPatch)),
 
@@ -1186,7 +1176,7 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
                 req: {"in":"request","name":"req","required":true,"dataType":"object"},
         };
         app.post('/media/:id/rating',
-            authenticateMiddleware([{"cookieAuth":[]}]),
+            authenticateMiddleware([{"cookieAuth":["ratings.set"]}]),
             ...(fetchMiddlewares<RequestHandler>(RatingsController)),
             ...(fetchMiddlewares<RequestHandler>(RatingsController.prototype.rateMedia)),
 
@@ -1218,7 +1208,7 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
                 req: {"in":"request","name":"req","required":true,"dataType":"object"},
         };
         app.delete('/media/:id/rating',
-            authenticateMiddleware([{"cookieAuth":[]}]),
+            authenticateMiddleware([{"cookieAuth":["ratings.remove"]}]),
             ...(fetchMiddlewares<RequestHandler>(RatingsController)),
             ...(fetchMiddlewares<RequestHandler>(RatingsController.prototype.unrateMedia)),
 
@@ -1251,7 +1241,7 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
                 cursor: {"in":"query","name":"cursor","dataType":"string"},
         };
         app.get('/moderation/queue',
-            authenticateMiddleware([{"cookieAuth":[]}]),
+            authenticateMiddleware([{"cookieAuth":["auth.load_permissions","moderation.queue_read"]}]),
             ...(fetchMiddlewares<RequestHandler>(ModerationController)),
             ...(fetchMiddlewares<RequestHandler>(ModerationController.prototype.getQueue)),
 
@@ -1284,7 +1274,7 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
                 req: {"in":"request","name":"req","required":true,"dataType":"object"},
         };
         app.post('/moderation/media/:id/approve',
-            authenticateMiddleware([{"cookieAuth":[]}]),
+            authenticateMiddleware([{"cookieAuth":["auth.load_permissions","moderation.media_approve"]}]),
             ...(fetchMiddlewares<RequestHandler>(ModerationController)),
             ...(fetchMiddlewares<RequestHandler>(ModerationController.prototype.approve)),
 
@@ -1317,7 +1307,7 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
                 req: {"in":"request","name":"req","required":true,"dataType":"object"},
         };
         app.post('/moderation/media/:id/reject',
-            authenticateMiddleware([{"cookieAuth":[]}]),
+            authenticateMiddleware([{"cookieAuth":["auth.load_permissions","moderation.media_reject"]}]),
             ...(fetchMiddlewares<RequestHandler>(ModerationController)),
             ...(fetchMiddlewares<RequestHandler>(ModerationController.prototype.reject)),
 
@@ -1349,7 +1339,7 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
                 req: {"in":"request","name":"req","required":true,"dataType":"object"},
         };
         app.get('/media/:id',
-            authenticateMiddleware([{"optionalCookieAuth":[]}]),
+            authenticateMiddleware([{"optionalCookieAuth":["auth.load_permissions"]}]),
             ...(fetchMiddlewares<RequestHandler>(MediaController)),
             ...(fetchMiddlewares<RequestHandler>(MediaController.prototype.getMedia)),
 
@@ -1384,7 +1374,7 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
                 type: {"in":"query","name":"type","dataType":"string"},
         };
         app.get('/media',
-            authenticateMiddleware([{"optionalCookieAuth":[]}]),
+            authenticateMiddleware([{"optionalCookieAuth":["auth.load_permissions"]}]),
             ...(fetchMiddlewares<RequestHandler>(MediaController)),
             ...(fetchMiddlewares<RequestHandler>(MediaController.prototype.listMedia)),
 
@@ -1413,9 +1403,18 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
         // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
         const argsMediaController_uploadMedia: Record<string, TsoaRoute.ParameterSchema> = {
                 req: {"in":"request","name":"req","required":true,"dataType":"object"},
+                file: {"in":"formData","name":"file","dataType":"file"},
+                description: {"in":"formData","name":"description","dataType":"string"},
+                tags: {"in":"formData","name":"tags","dataType":"string"},
         };
         app.post('/media/upload',
-            authenticateMiddleware([{"cookieAuth":[]}]),
+            authenticateMiddleware([{"cookieAuth":["auth.load_permissions","media.upload"]}]),
+            upload.fields([
+                {
+                    name: "file",
+                    maxCount: 1
+                }
+            ]),
             ...(fetchMiddlewares<RequestHandler>(MediaController)),
             ...(fetchMiddlewares<RequestHandler>(MediaController.prototype.uploadMedia)),
 
@@ -1446,7 +1445,7 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
                 req: {"in":"request","name":"req","required":true,"dataType":"object"},
         };
         app.get('/jobs',
-            authenticateMiddleware([{"cookieAuth":[]}]),
+            authenticateMiddleware([{"cookieAuth":["auth.load_permissions","jobs.run"]}]),
             ...(fetchMiddlewares<RequestHandler>(JobsController)),
             ...(fetchMiddlewares<RequestHandler>(JobsController.prototype.listJobs)),
 
@@ -1478,7 +1477,7 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
                 req: {"in":"request","name":"req","required":true,"dataType":"object"},
         };
         app.post('/jobs/:name/run',
-            authenticateMiddleware([{"cookieAuth":[]}]),
+            authenticateMiddleware([{"cookieAuth":["auth.load_permissions","jobs.run"]}]),
             ...(fetchMiddlewares<RequestHandler>(JobsController)),
             ...(fetchMiddlewares<RequestHandler>(JobsController.prototype.runJob)),
 
@@ -1510,7 +1509,7 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
                 req: {"in":"request","name":"req","required":true,"dataType":"object"},
         };
         app.post('/media/:id/favorite',
-            authenticateMiddleware([{"cookieAuth":[]}]),
+            authenticateMiddleware([{"cookieAuth":["auth.load_permissions","favorites.add"]}]),
             ...(fetchMiddlewares<RequestHandler>(FavoritesController)),
             ...(fetchMiddlewares<RequestHandler>(FavoritesController.prototype.favorite)),
 
@@ -1542,7 +1541,7 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
                 req: {"in":"request","name":"req","required":true,"dataType":"object"},
         };
         app.delete('/media/:id/favorite',
-            authenticateMiddleware([{"cookieAuth":[]}]),
+            authenticateMiddleware([{"cookieAuth":["auth.load_permissions","favorites.remove"]}]),
             ...(fetchMiddlewares<RequestHandler>(FavoritesController)),
             ...(fetchMiddlewares<RequestHandler>(FavoritesController.prototype.unfavorite)),
 
@@ -1577,7 +1576,7 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
                 sort: {"in":"query","name":"sort","dataType":"string"},
         };
         app.get('/media/:id/comments',
-            authenticateMiddleware([{"optionalCookieAuth":[]}]),
+            authenticateMiddleware([{"cookieAuth":["comments.read"]}]),
             ...(fetchMiddlewares<RequestHandler>(CommentsController)),
             ...(fetchMiddlewares<RequestHandler>(CommentsController.prototype.listComments)),
 
@@ -1610,7 +1609,7 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
                 req: {"in":"request","name":"req","required":true,"dataType":"object"},
         };
         app.post('/media/:id/comments',
-            authenticateMiddleware([{"cookieAuth":[]}]),
+            authenticateMiddleware([{"cookieAuth":["comments.create"]}]),
             ...(fetchMiddlewares<RequestHandler>(CommentsController)),
             ...(fetchMiddlewares<RequestHandler>(CommentsController.prototype.createMediaComment)),
 
@@ -1643,7 +1642,7 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
                 req: {"in":"request","name":"req","required":true,"dataType":"object"},
         };
         app.delete('/comments/:id',
-            authenticateMiddleware([{"cookieAuth":[]}]),
+            authenticateMiddleware([{"cookieAuth":["auth.load_permissions"]}]),
             ...(fetchMiddlewares<RequestHandler>(CommentsController)),
             ...(fetchMiddlewares<RequestHandler>(CommentsController.prototype.deleteCommentById)),
 
@@ -1675,7 +1674,7 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
                 req: {"in":"request","name":"req","required":true,"dataType":"object"},
         };
         app.post('/comics',
-            authenticateMiddleware([{"cookieAuth":[]}]),
+            authenticateMiddleware([{"cookieAuth":["auth.load_permissions","comics.create"]}]),
             ...(fetchMiddlewares<RequestHandler>(ComicsController)),
             ...(fetchMiddlewares<RequestHandler>(ComicsController.prototype.createComic)),
 
@@ -1707,7 +1706,7 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
                 req: {"in":"request","name":"req","required":true,"dataType":"object"},
         };
         app.get('/comics/:id',
-            authenticateMiddleware([{"cookieAuth":[]}]),
+            authenticateMiddleware([{"cookieAuth":["auth.load_permissions"]}]),
             ...(fetchMiddlewares<RequestHandler>(ComicsController)),
             ...(fetchMiddlewares<RequestHandler>(ComicsController.prototype.getComic)),
 
@@ -1740,7 +1739,7 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
                 req: {"in":"request","name":"req","required":true,"dataType":"object"},
         };
         app.patch('/comics/:id',
-            authenticateMiddleware([{"cookieAuth":[]}]),
+            authenticateMiddleware([{"cookieAuth":["auth.load_permissions"]}]),
             ...(fetchMiddlewares<RequestHandler>(ComicsController)),
             ...(fetchMiddlewares<RequestHandler>(ComicsController.prototype.updateComic)),
 
@@ -1773,7 +1772,7 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
                 req: {"in":"request","name":"req","required":true,"dataType":"object"},
         };
         app.post('/comics/:id/pages',
-            authenticateMiddleware([{"cookieAuth":[]}]),
+            authenticateMiddleware([{"cookieAuth":["auth.load_permissions"]}]),
             ...(fetchMiddlewares<RequestHandler>(ComicsController)),
             ...(fetchMiddlewares<RequestHandler>(ComicsController.prototype.addComicPage)),
 
@@ -1806,7 +1805,7 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
                 req: {"in":"request","name":"req","required":true,"dataType":"object"},
         };
         app.delete('/comics/:id/pages/:mediaId',
-            authenticateMiddleware([{"cookieAuth":[]}]),
+            authenticateMiddleware([{"cookieAuth":["auth.load_permissions"]}]),
             ...(fetchMiddlewares<RequestHandler>(ComicsController)),
             ...(fetchMiddlewares<RequestHandler>(ComicsController.prototype.removeComicPage)),
 
@@ -1839,7 +1838,7 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
                 req: {"in":"request","name":"req","required":true,"dataType":"object"},
         };
         app.post('/comics/:id/pages/reorder',
-            authenticateMiddleware([{"cookieAuth":[]}]),
+            authenticateMiddleware([{"cookieAuth":["auth.load_permissions"]}]),
             ...(fetchMiddlewares<RequestHandler>(ComicsController)),
             ...(fetchMiddlewares<RequestHandler>(ComicsController.prototype.reorderPages)),
 

@@ -6,6 +6,7 @@
     "main": "dist/server.js",
     "prisma:seed": "tsx prisma/seed.ts",
     "scripts": {
+        "docker": "./start-docker.sh",
         "tsoa:gen": "tsoa spec && tsoa routes",
         "dev": "npm run tsoa:gen && tsx watch src/server.ts",
         "build": "tsc -p tsconfig.json",
@@ -24,6 +25,7 @@
         "express": "^4.19.2",
         "ffprobe-static": "^3.1.0",
         "file-type": "^21.3.0",
+        "ioredis": "^5.9.3",
         "jsonwebtoken": "^9.0.3",
         "mime-types": "^3.0.2",
         "minio": "^8.0.6",

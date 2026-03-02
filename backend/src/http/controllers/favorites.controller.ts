@@ -23,6 +23,8 @@ import {
     removeFavorite,
 } from '../../domain/media/favorites.service';
 
+import { Permission, Scope } from '../../domain/auth/permissions';
+
 @Route('media')
 @Tags('Favorites')
 export class FavoritesController extends Controller {
@@ -30,13 +32,12 @@ export class FavoritesController extends Controller {
      * POST /media/:id/favorite
      */
     @Post('{id}/favorite')
-    @Security('cookieAuth')
+    @Security('cookieAuth', [Scope.LOAD_PERMISSIONS, Permission.FAVORITES_ADD])
     public async favorite(
         @Path() id: string,
         @Request() req: ExpressRequest,
     ): Promise<OkDTO> {
         await requireCurrentUser(req);
-
         requireNotBanned(req.currentUser);
 
         await requireNoActiveRestriction(req.currentUser?.id, [
@@ -57,13 +58,15 @@ export class FavoritesController extends Controller {
      * DELETE /media/:id/favorite
      */
     @Delete('{id}/favorite')
-    @Security('cookieAuth')
+    @Security('cookieAuth', [
+        Scope.LOAD_PERMISSIONS,
+        Permission.FAVORITES_REMOVE,
+    ])
     public async unfavorite(
         @Path() id: string,
         @Request() req: ExpressRequest,
     ): Promise<OkDTO> {
         await requireCurrentUser(req);
-
         requireNotBanned(req.currentUser);
 
         await requireNoActiveRestriction(req.currentUser?.id, [

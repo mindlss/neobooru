@@ -7,19 +7,99 @@
 		"requestBodies": {},
 		"responses": {},
 		"schemas": {
-			"_36_Enums.UserRole": {
-				"type": "string",
-				"enum": [
-					"GUEST",
-					"UNVERIFIED",
-					"USER",
-					"TRUSTED",
-					"MODERATOR",
-					"ADMIN"
-				]
-			},
-			"UserRole": {
-				"$ref": "#/components/schemas/_36_Enums.UserRole"
+			"UserSelfDTO": {
+				"properties": {
+					"permissions": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array"
+					},
+					"roles": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array"
+					},
+					"isBanned": {
+						"type": "boolean"
+					},
+					"warningCount": {
+						"type": "number",
+						"format": "double"
+					},
+					"uploadCount": {
+						"type": "number",
+						"format": "double"
+					},
+					"showUploads": {
+						"type": "boolean"
+					},
+					"showFavorites": {
+						"type": "boolean"
+					},
+					"showRatings": {
+						"type": "boolean"
+					},
+					"showComments": {
+						"type": "boolean"
+					},
+					"emailVerifiedAt": {
+						"type": "string",
+						"nullable": true
+					},
+					"updatedAt": {
+						"type": "string"
+					},
+					"createdAt": {
+						"type": "string"
+					},
+					"website": {
+						"type": "string",
+						"nullable": true
+					},
+					"bio": {
+						"type": "string",
+						"nullable": true
+					},
+					"avatarUrl": {
+						"type": "string",
+						"nullable": true
+					},
+					"birthDate": {
+						"type": "string",
+						"nullable": true
+					},
+					"email": {
+						"type": "string"
+					},
+					"username": {
+						"type": "string"
+					},
+					"id": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"isBanned",
+					"warningCount",
+					"uploadCount",
+					"showUploads",
+					"showFavorites",
+					"showRatings",
+					"showComments",
+					"emailVerifiedAt",
+					"updatedAt",
+					"createdAt",
+					"website",
+					"bio",
+					"avatarUrl",
+					"birthDate",
+					"email",
+					"username",
+					"id"
+				],
+				"type": "object"
 			},
 			"UserPublicDTO": {
 				"properties": {
@@ -38,9 +118,6 @@
 						"type": "string",
 						"nullable": true
 					},
-					"role": {
-						"$ref": "#/components/schemas/UserRole"
-					},
 					"username": {
 						"type": "string"
 					},
@@ -53,7 +130,6 @@
 					"website",
 					"bio",
 					"avatarUrl",
-					"role",
 					"username",
 					"id"
 				],
@@ -255,7 +331,8 @@
 						],
 						"type": "object"
 					}
-				]
+				],
+				"description": "Sensitive/staff fields.\nShow them only if viewer can actually act as staff for media.\n\nIMPORTANT: \"read explicit\" is NOT a moderation entitlement by itself,\nso it must NOT unlock mod fields."
 			},
 			"MediaVisibleDTO": {
 				"anyOf": [
@@ -301,9 +378,6 @@
 			},
 			"CommentAuthorDTO": {
 				"properties": {
-					"role": {
-						"$ref": "#/components/schemas/UserRole"
-					},
 					"username": {
 						"type": "string"
 					},
@@ -312,7 +386,6 @@
 					}
 				},
 				"required": [
-					"role",
 					"username",
 					"id"
 				],
@@ -424,92 +497,6 @@
 				"required": [
 					"nextCursor",
 					"data"
-				],
-				"type": "object"
-			},
-			"UserSelfDTO": {
-				"properties": {
-					"isBanned": {
-						"type": "boolean"
-					},
-					"warningCount": {
-						"type": "number",
-						"format": "double"
-					},
-					"uploadCount": {
-						"type": "number",
-						"format": "double"
-					},
-					"showUploads": {
-						"type": "boolean"
-					},
-					"showFavorites": {
-						"type": "boolean"
-					},
-					"showRatings": {
-						"type": "boolean"
-					},
-					"showComments": {
-						"type": "boolean"
-					},
-					"emailVerifiedAt": {
-						"type": "string",
-						"nullable": true
-					},
-					"updatedAt": {
-						"type": "string"
-					},
-					"createdAt": {
-						"type": "string"
-					},
-					"website": {
-						"type": "string",
-						"nullable": true
-					},
-					"bio": {
-						"type": "string",
-						"nullable": true
-					},
-					"avatarUrl": {
-						"type": "string",
-						"nullable": true
-					},
-					"birthDate": {
-						"type": "string",
-						"nullable": true
-					},
-					"role": {
-						"$ref": "#/components/schemas/UserRole"
-					},
-					"email": {
-						"type": "string"
-					},
-					"username": {
-						"type": "string"
-					},
-					"id": {
-						"type": "string"
-					}
-				},
-				"required": [
-					"isBanned",
-					"warningCount",
-					"uploadCount",
-					"showUploads",
-					"showFavorites",
-					"showRatings",
-					"showComments",
-					"emailVerifiedAt",
-					"updatedAt",
-					"createdAt",
-					"website",
-					"bio",
-					"avatarUrl",
-					"birthDate",
-					"role",
-					"email",
-					"username",
-					"id"
 				],
 				"type": "object"
 			},
@@ -1878,6 +1865,71 @@
 		"contact": {}
 	},
 	"paths": {
+		"/users/me": {
+			"get": {
+				"operationId": "GetMe",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/UserSelfDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "GET /users/me",
+				"tags": [
+					"Users"
+				],
+				"security": [
+					{
+						"cookieAuth": [
+							"auth.load_permissions"
+						]
+					}
+				],
+				"parameters": []
+			},
+			"patch": {
+				"operationId": "PatchMe",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/UserSelfDTO"
+								}
+							}
+						}
+					}
+				},
+				"description": "PATCH /users/me",
+				"tags": [
+					"Users"
+				],
+				"security": [
+					{
+						"cookieAuth": [
+							"auth.load_permissions",
+							"users.update_self"
+						]
+					}
+				],
+				"parameters": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {}
+						}
+					}
+				}
+			}
+		},
 		"/users/{id}": {
 			"get": {
 				"operationId": "GetUserPublic",
@@ -1893,13 +1945,16 @@
 						}
 					}
 				},
-				"description": "GET /users/:id\npublic profile, viewer-aware",
+				"description": "GET /users/:id",
 				"tags": [
 					"Users"
 				],
 				"security": [
 					{
-						"optionalCookieAuth": []
+						"optionalCookieAuth": [
+							"auth.load_permissions",
+							"users.read"
+						]
 					}
 				],
 				"parameters": [
@@ -1929,13 +1984,15 @@
 						}
 					}
 				},
-				"description": "GET /users/:id/uploads",
 				"tags": [
 					"Users"
 				],
 				"security": [
 					{
-						"optionalCookieAuth": []
+						"optionalCookieAuth": [
+							"auth.load_permissions",
+							"users.read"
+						]
 					}
 				],
 				"parameters": [
@@ -2006,13 +2063,15 @@
 						}
 					}
 				},
-				"description": "GET /users/:id/favorites",
 				"tags": [
 					"Users"
 				],
 				"security": [
 					{
-						"optionalCookieAuth": []
+						"optionalCookieAuth": [
+							"auth.load_permissions",
+							"users.read"
+						]
 					}
 				],
 				"parameters": [
@@ -2083,13 +2142,15 @@
 						}
 					}
 				},
-				"description": "GET /users/:id/comments",
 				"tags": [
 					"Users"
 				],
 				"security": [
 					{
-						"optionalCookieAuth": []
+						"optionalCookieAuth": [
+							"auth.load_permissions",
+							"users.read"
+						]
 					}
 				],
 				"parameters": [
@@ -2148,13 +2209,15 @@
 						}
 					}
 				},
-				"description": "GET /users/:id/ratings",
 				"tags": [
 					"Users"
 				],
 				"security": [
 					{
-						"optionalCookieAuth": []
+						"optionalCookieAuth": [
+							"auth.load_permissions",
+							"users.read"
+						]
 					}
 				],
 				"parameters": [
@@ -2210,66 +2273,6 @@
 				]
 			}
 		},
-		"/users/me": {
-			"get": {
-				"operationId": "GetMe",
-				"responses": {
-					"200": {
-						"description": "Ok",
-						"content": {
-							"application/json": {
-								"schema": {
-									"$ref": "#/components/schemas/UserSelfDTO"
-								}
-							}
-						}
-					}
-				},
-				"description": "GET /users/me\nauth required",
-				"tags": [
-					"Users"
-				],
-				"security": [
-					{
-						"cookieAuth": []
-					}
-				],
-				"parameters": []
-			},
-			"patch": {
-				"operationId": "PatchMe",
-				"responses": {
-					"200": {
-						"description": "Ok",
-						"content": {
-							"application/json": {
-								"schema": {
-									"$ref": "#/components/schemas/UserSelfDTO"
-								}
-							}
-						}
-					}
-				},
-				"description": "PATCH /users/me\nauth required + not banned",
-				"tags": [
-					"Users"
-				],
-				"security": [
-					{
-						"cookieAuth": []
-					}
-				],
-				"parameters": [],
-				"requestBody": {
-					"required": true,
-					"content": {
-						"application/json": {
-							"schema": {}
-						}
-					}
-				}
-			}
-		},
 		"/users/me/avatar": {
 			"post": {
 				"operationId": "UploadMyAvatar",
@@ -2285,13 +2288,16 @@
 						}
 					}
 				},
-				"description": "POST /users/me/avatar\nmultipart/form-data: avatar (file)",
+				"description": "POST /users/me/avatar",
 				"tags": [
 					"Users"
 				],
 				"security": [
 					{
-						"cookieAuth": []
+						"cookieAuth": [
+							"auth.load_permissions",
+							"users.avatar_update_self"
+						]
 					}
 				],
 				"parameters": [],
@@ -2328,12 +2334,15 @@
 						}
 					}
 				},
+				"description": "GET /tags/search\npublic (optional auth), viewer-aware",
 				"tags": [
 					"Tags"
 				],
 				"security": [
 					{
-						"optionalCookieAuth": []
+						"optionalCookieAuth": [
+							"auth.load_permissions"
+						]
 					}
 				],
 				"parameters": [
@@ -2372,12 +2381,15 @@
 						}
 					}
 				},
+				"description": "GET /tags/popular\npublic (optional auth), viewer-aware",
 				"tags": [
 					"Tags"
 				],
 				"security": [
 					{
-						"optionalCookieAuth": []
+						"optionalCookieAuth": [
+							"auth.load_permissions"
+						]
 					}
 				],
 				"parameters": [
@@ -2406,12 +2418,16 @@
 						}
 					}
 				},
+				"description": "POST /tags\nstaff: TAGS_MANAGE",
 				"tags": [
 					"Tags"
 				],
 				"security": [
 					{
-						"cookieAuth": []
+						"cookieAuth": [
+							"auth.load_permissions",
+							"tags.manage"
+						]
 					}
 				],
 				"parameters": [],
@@ -2442,12 +2458,16 @@
 						}
 					}
 				},
+				"description": "PATCH /tags/:id\nstaff: TAGS_MANAGE",
 				"tags": [
 					"Tags"
 				],
 				"security": [
 					{
-						"cookieAuth": []
+						"cookieAuth": [
+							"auth.load_permissions",
+							"tags.manage"
+						]
 					}
 				],
 				"parameters": [
@@ -2487,12 +2507,16 @@
 						}
 					}
 				},
+				"description": "GET /tags/:id/aliases\nstaff: TAGS_ALIASES_MANAGE",
 				"tags": [
 					"Tags"
 				],
 				"security": [
 					{
-						"cookieAuth": []
+						"cookieAuth": [
+							"auth.load_permissions",
+							"tags.aliases_manage"
+						]
 					}
 				],
 				"parameters": [
@@ -2518,12 +2542,16 @@
 						}
 					}
 				},
+				"description": "POST /tags/:id/aliases\nstaff: TAGS_ALIASES_MANAGE",
 				"tags": [
 					"Tags"
 				],
 				"security": [
 					{
-						"cookieAuth": []
+						"cookieAuth": [
+							"auth.load_permissions",
+							"tags.aliases_manage"
+						]
 					}
 				],
 				"parameters": [
@@ -2563,12 +2591,16 @@
 						}
 					}
 				},
+				"description": "DELETE /tags/aliases/:id\nstaff: TAGS_ALIASES_MANAGE",
 				"tags": [
 					"Tags"
 				],
 				"security": [
 					{
-						"cookieAuth": []
+						"cookieAuth": [
+							"auth.load_permissions",
+							"tags.aliases_manage"
+						]
 					}
 				],
 				"parameters": [
@@ -2598,12 +2630,15 @@
 						}
 					}
 				},
+				"description": "POST /media/:id/tags\nneeds perms in principal (service checks):\n- MEDIA_TAGS_EDIT_ANY OR (MEDIA_TAGS_EDIT_OWN + owner)",
 				"tags": [
 					"Tags"
 				],
 				"security": [
 					{
-						"cookieAuth": []
+						"cookieAuth": [
+							"auth.load_permissions"
+						]
 					}
 				],
 				"parameters": [
@@ -2643,12 +2678,15 @@
 						}
 					}
 				},
+				"description": "POST /media/:id/tags/add",
 				"tags": [
 					"Tags"
 				],
 				"security": [
 					{
-						"cookieAuth": []
+						"cookieAuth": [
+							"auth.load_permissions"
+						]
 					}
 				],
 				"parameters": [
@@ -2688,12 +2726,15 @@
 						}
 					}
 				},
+				"description": "POST /media/:id/tags/remove",
 				"tags": [
 					"Tags"
 				],
 				"security": [
 					{
-						"cookieAuth": []
+						"cookieAuth": [
+							"auth.load_permissions"
+						]
 					}
 				],
 				"parameters": [
@@ -2733,13 +2774,15 @@
 						}
 					}
 				},
-				"description": "GET /search\npublic, viewer-aware",
+				"description": "GET /search\npublic, permission-aware via principal (optional cookie auth)",
 				"tags": [
 					"Search"
 				],
 				"security": [
 					{
-						"optionalCookieAuth": []
+						"optionalCookieAuth": [
+							"auth.load_permissions"
+						]
 					}
 				],
 				"parameters": [
@@ -2786,13 +2829,16 @@
 						}
 					}
 				},
-				"description": "POST /reports\nauth required + not banned + restriction checks",
+				"description": "POST /reports",
 				"tags": [
 					"Reports"
 				],
 				"security": [
 					{
-						"cookieAuth": []
+						"cookieAuth": [
+							"auth.load_permissions",
+							"reports.create"
+						]
 					}
 				],
 				"parameters": [],
@@ -2823,13 +2869,16 @@
 						}
 					}
 				},
-				"description": "GET /admin/reports\nModerator/Admin only",
+				"description": "GET /admin/reports",
 				"tags": [
 					"Reports"
 				],
 				"security": [
 					{
-						"cookieAuth": []
+						"cookieAuth": [
+							"auth.load_permissions",
+							"reports.admin_read"
+						]
 					}
 				],
 				"parameters": [
@@ -2906,13 +2955,16 @@
 						}
 					}
 				},
-				"description": "GET /admin/reports/targets\nModerator/Admin only",
+				"description": "GET /admin/reports/targets",
 				"tags": [
 					"Reports"
 				],
 				"security": [
 					{
-						"cookieAuth": []
+						"cookieAuth": [
+							"auth.load_permissions",
+							"reports.admin_read"
+						]
 					}
 				],
 				"parameters": [
@@ -2992,13 +3044,16 @@
 						}
 					}
 				},
-				"description": "PATCH /admin/reports/:id\nModerator/Admin only",
+				"description": "PATCH /admin/reports/:id",
 				"tags": [
 					"Reports"
 				],
 				"security": [
 					{
-						"cookieAuth": []
+						"cookieAuth": [
+							"auth.load_permissions",
+							"reports.admin_update"
+						]
 					}
 				],
 				"parameters": [
@@ -3038,13 +3093,15 @@
 						}
 					}
 				},
-				"description": "POST /media/:id/rating",
+				"description": "POST /media/:id/rating\nскрываем через permission",
 				"tags": [
 					"Ratings"
 				],
 				"security": [
 					{
-						"cookieAuth": []
+						"cookieAuth": [
+							"ratings.set"
+						]
 					}
 				],
 				"parameters": [
@@ -3082,13 +3139,15 @@
 						}
 					}
 				},
-				"description": "DELETE /media/:id/rating",
+				"description": "DELETE /media/:id/rating\nскрываем через permission",
 				"tags": [
 					"Ratings"
 				],
 				"security": [
 					{
-						"cookieAuth": []
+						"cookieAuth": [
+							"ratings.remove"
+						]
 					}
 				],
 				"parameters": [
@@ -3118,13 +3177,16 @@
 						}
 					}
 				},
-				"description": "GET /moderation/queue\nModerator/Admin only",
+				"description": "GET /moderation/queue",
 				"tags": [
 					"Moderation"
 				],
 				"security": [
 					{
-						"cookieAuth": []
+						"cookieAuth": [
+							"auth.load_permissions",
+							"moderation.queue_read"
+						]
 					}
 				],
 				"parameters": [
@@ -3163,13 +3225,16 @@
 						}
 					}
 				},
-				"description": "POST /moderation/media/:id/approve\nModerator/Admin only",
+				"description": "POST /moderation/media/:id/approve",
 				"tags": [
 					"Moderation"
 				],
 				"security": [
 					{
-						"cookieAuth": []
+						"cookieAuth": [
+							"auth.load_permissions",
+							"moderation.media_approve"
+						]
 					}
 				],
 				"parameters": [
@@ -3209,13 +3274,16 @@
 						}
 					}
 				},
-				"description": "POST /moderation/media/:id/reject\nModerator/Admin only",
+				"description": "POST /moderation/media/:id/reject",
 				"tags": [
 					"Moderation"
 				],
 				"security": [
 					{
-						"cookieAuth": []
+						"cookieAuth": [
+							"auth.load_permissions",
+							"moderation.media_reject"
+						]
 					}
 				],
 				"parameters": [
@@ -3255,13 +3323,15 @@
 						}
 					}
 				},
-				"description": "GET /media/:id\npublic, viewer-aware",
+				"description": "GET /media/:id\npublic, principal-aware (optional auth)",
 				"tags": [
 					"Media"
 				],
 				"security": [
 					{
-						"optionalCookieAuth": []
+						"optionalCookieAuth": [
+							"auth.load_permissions"
+						]
 					}
 				],
 				"parameters": [
@@ -3291,13 +3361,15 @@
 						}
 					}
 				},
-				"description": "GET /media\npublic, viewer-aware",
+				"description": "GET /media\npublic, principal-aware (optional auth)",
 				"tags": [
 					"Media"
 				],
 				"security": [
 					{
-						"optionalCookieAuth": []
+						"optionalCookieAuth": [
+							"auth.load_permissions"
+						]
 					}
 				],
 				"parameters": [
@@ -3352,16 +3424,41 @@
 						}
 					}
 				},
-				"description": "POST /media/upload\nauth required, role restricted, ban + restriction checks\n\nNOTE: multipart parsing is implemented by parseMultipartToTemp(req).\nSwagger multipart form can be added later via tsoa+multer config.",
+				"description": "POST /media/upload\nauth required + perms + ban + restriction checks",
 				"tags": [
 					"Media"
 				],
 				"security": [
 					{
-						"cookieAuth": []
+						"cookieAuth": [
+							"auth.load_permissions",
+							"media.upload"
+						]
 					}
 				],
-				"parameters": []
+				"parameters": [],
+				"requestBody": {
+					"required": false,
+					"content": {
+						"multipart/form-data": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"file": {
+										"type": "string",
+										"format": "binary"
+									},
+									"description": {
+										"type": "string"
+									},
+									"tags": {
+										"type": "string"
+									}
+								}
+							}
+						}
+					}
+				}
 			}
 		},
 		"/jobs": {
@@ -3379,13 +3476,16 @@
 						}
 					}
 				},
-				"description": "GET /jobs\nMOD/ADMIN only",
+				"description": "GET /jobs",
 				"tags": [
 					"Jobs"
 				],
 				"security": [
 					{
-						"cookieAuth": []
+						"cookieAuth": [
+							"auth.load_permissions",
+							"jobs.run"
+						]
 					}
 				],
 				"parameters": []
@@ -3406,13 +3506,16 @@
 						}
 					}
 				},
-				"description": "POST /jobs/:name/run\nMOD/ADMIN only",
+				"description": "POST /jobs/:name/run",
 				"tags": [
 					"Jobs"
 				],
 				"security": [
 					{
-						"cookieAuth": []
+						"cookieAuth": [
+							"auth.load_permissions",
+							"jobs.run"
+						]
 					}
 				],
 				"parameters": [
@@ -3448,7 +3551,10 @@
 				],
 				"security": [
 					{
-						"cookieAuth": []
+						"cookieAuth": [
+							"auth.load_permissions",
+							"favorites.add"
+						]
 					}
 				],
 				"parameters": [
@@ -3482,7 +3588,10 @@
 				],
 				"security": [
 					{
-						"cookieAuth": []
+						"cookieAuth": [
+							"auth.load_permissions",
+							"favorites.remove"
+						]
 					}
 				],
 				"parameters": [
@@ -3512,13 +3621,15 @@
 						}
 					}
 				},
-				"description": "List comments for media (viewer-aware, public)\nGET /media/:id/comments",
+				"description": "GET /media/:id/comments\nСкрываем эндпоинт через permission (если нет perms -> 401/403 на auth этапе)",
 				"tags": [
 					"Comments"
 				],
 				"security": [
 					{
-						"optionalCookieAuth": []
+						"cookieAuth": [
+							"comments.read"
+						]
 					}
 				],
 				"parameters": [
@@ -3571,13 +3682,15 @@
 						}
 					}
 				},
-				"description": "Create comment (auth required)\nPOST /media/:id/comments",
+				"description": "POST /media/:id/comments",
 				"tags": [
 					"Comments"
 				],
 				"security": [
 					{
-						"cookieAuth": []
+						"cookieAuth": [
+							"comments.create"
+						]
 					}
 				],
 				"parameters": [
@@ -3617,13 +3730,15 @@
 						}
 					}
 				},
-				"description": "Soft-delete comment (owner or mod/admin)\nDELETE /comments/:id",
+				"description": "DELETE /comments/:id\nany-of (own or any) -> поэтому только LOAD_PERMISSIONS, а дальше доменная проверка.",
 				"tags": [
 					"Comments"
 				],
 				"security": [
 					{
-						"cookieAuth": []
+						"cookieAuth": [
+							"auth.load_permissions"
+						]
 					}
 				],
 				"parameters": [
@@ -3663,13 +3778,16 @@
 						}
 					}
 				},
-				"description": "POST /comics\nauth required + not banned + role allowed",
+				"description": "POST /comics\nauth required + not banned + permissions loaded",
 				"tags": [
 					"Comics"
 				],
 				"security": [
 					{
-						"cookieAuth": []
+						"cookieAuth": [
+							"auth.load_permissions",
+							"comics.create"
+						]
 					}
 				],
 				"parameters": [],
@@ -3700,13 +3818,15 @@
 						}
 					}
 				},
-				"description": "GET /comics/:id\nauth required (по твоему роутеру)",
+				"description": "GET /comics/:id\nauth required + perms loaded",
 				"tags": [
 					"Comics"
 				],
 				"security": [
 					{
-						"cookieAuth": []
+						"cookieAuth": [
+							"auth.load_permissions"
+						]
 					}
 				],
 				"parameters": [
@@ -3740,7 +3860,9 @@
 				],
 				"security": [
 					{
-						"cookieAuth": []
+						"cookieAuth": [
+							"auth.load_permissions"
+						]
 					}
 				],
 				"parameters": [
@@ -3786,7 +3908,9 @@
 				],
 				"security": [
 					{
-						"cookieAuth": []
+						"cookieAuth": [
+							"auth.load_permissions"
+						]
 					}
 				],
 				"parameters": [
@@ -3832,7 +3956,9 @@
 				],
 				"security": [
 					{
-						"cookieAuth": []
+						"cookieAuth": [
+							"auth.load_permissions"
+						]
 					}
 				],
 				"parameters": [
@@ -3876,7 +4002,9 @@
 				],
 				"security": [
 					{
-						"cookieAuth": []
+						"cookieAuth": [
+							"auth.load_permissions"
+						]
 					}
 				],
 				"parameters": [

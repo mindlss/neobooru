@@ -11,11 +11,10 @@ import {
     Tags,
 } from 'tsoa';
 import type { Request as ExpressRequest } from 'express';
-import { UserRole } from '@prisma/client';
 
 import { apiError } from '../errors/ApiError';
 import { requireCurrentUser } from '../tsoa/context';
-import { requireNotBanned, requireRole } from '../tsoa/guards';
+import { requireNotBanned } from '../tsoa/guards';
 
 import {
     queueQuerySchema,
@@ -35,15 +34,19 @@ import {
     type ModerationActionResponseDTO,
 } from '../dto/moderation.dto';
 
+import { Permission, Scope } from '../../domain/auth/permissions';
+
 @Route('moderation')
 @Tags('Moderation')
 export class ModerationController extends Controller {
     /**
      * GET /moderation/queue
-     * Moderator/Admin only
      */
     @Get('queue')
-    @Security('cookieAuth')
+    @Security('cookieAuth', [
+        Scope.LOAD_PERMISSIONS,
+        Permission.MODERATION_QUEUE_READ,
+    ])
     public async getQueue(
         @Request() req: ExpressRequest,
         @Query() limit?: number,
@@ -51,7 +54,6 @@ export class ModerationController extends Controller {
     ): Promise<ModerationQueueResponseDTO> {
         await requireCurrentUser(req);
         requireNotBanned(req.currentUser);
-        requireRole(req.viewer!.role, [UserRole.MODERATOR, UserRole.ADMIN]);
 
         const q = queueQuerySchema.parse({ limit, cursor });
 
@@ -68,10 +70,12 @@ export class ModerationController extends Controller {
 
     /**
      * POST /moderation/media/:id/approve
-     * Moderator/Admin only
      */
     @Post('media/{id}/approve')
-    @Security('cookieAuth')
+    @Security('cookieAuth', [
+        Scope.LOAD_PERMISSIONS,
+        Permission.MODERATION_MEDIA_APPROVE,
+    ])
     public async approve(
         @Path() id: string,
         @Body() body: ModerationActionBodyDTO,
@@ -79,7 +83,6 @@ export class ModerationController extends Controller {
     ): Promise<ModerationActionResponseDTO> {
         await requireCurrentUser(req);
         requireNotBanned(req.currentUser);
-        requireRole(req.viewer!.role, [UserRole.MODERATOR, UserRole.ADMIN]);
 
         const data = moderationActionSchema.parse(body);
 
@@ -106,10 +109,12 @@ export class ModerationController extends Controller {
 
     /**
      * POST /moderation/media/:id/reject
-     * Moderator/Admin only
      */
     @Post('media/{id}/reject')
-    @Security('cookieAuth')
+    @Security('cookieAuth', [
+        Scope.LOAD_PERMISSIONS,
+        Permission.MODERATION_MEDIA_REJECT,
+    ])
     public async reject(
         @Path() id: string,
         @Body() body: ModerationActionBodyDTO,
@@ -117,7 +122,6 @@ export class ModerationController extends Controller {
     ): Promise<ModerationActionResponseDTO> {
         await requireCurrentUser(req);
         requireNotBanned(req.currentUser);
-        requireRole(req.viewer!.role, [UserRole.MODERATOR, UserRole.ADMIN]);
 
         const data = moderationActionSchema.parse(body);
 

@@ -1,21 +1,17 @@
 import { prisma } from '../../lib/prisma';
 import { minio } from '../../lib/minio';
 import { env } from '../../config/env';
-import { UserRole } from '@prisma/client';
+import { Permission } from '../auth/permissions';
+import type { Principal } from '../auth/principal';
+import { hasPermission } from '../auth/permission.utils';
 
-type Viewer = { id?: string; role: UserRole; isAdult: boolean } | undefined;
-
-function isModerator(viewer: Viewer) {
-    return (
-        viewer?.role === UserRole.MODERATOR || viewer?.role === UserRole.ADMIN
-    );
-}
+type Viewer = { id?: string; isAdult: boolean } | undefined;
 
 async function presign(key: string) {
     return minio.presignedGetObject(
         env.MINIO_BUCKET,
         key,
-        env.MINIO_PRESIGN_EXPIRES
+        env.MINIO_PRESIGN_EXPIRES,
     );
 }
 
@@ -23,8 +19,21 @@ function canSeeAvatar(viewer: Viewer) {
     return !!viewer?.isAdult;
 }
 
+export function computeIsAdult(birthDate: Date | null | undefined): boolean {
+    if (!birthDate) return false;
+
+    const now = new Date();
+    const eighteenYearsAgo = new Date(
+        now.getFullYear() - 18,
+        now.getMonth(),
+        now.getDate(),
+    );
+    return birthDate <= eighteenYearsAgo;
+}
+
 export async function getUserPublicById(params: {
     userId: string;
+    principal: Principal;
     viewer: Viewer;
 }) {
     const user = await prisma.user.findUnique({
@@ -32,7 +41,6 @@ export async function getUserPublicById(params: {
         select: {
             id: true,
             username: true,
-            role: true,
             avatarKey: true,
             bio: true,
             website: true,
@@ -43,7 +51,12 @@ export async function getUserPublicById(params: {
 
     if (!user) return null;
 
-    if (user.deletedAt && !isModerator(params.viewer)) return null;
+    if (
+        user.deletedAt &&
+        !hasPermission(params.principal, Permission.USERS_READ_DELETED)
+    ) {
+        return null;
+    }
 
     const avatarUrl =
         user.avatarKey && canSeeAvatar(params.viewer)
@@ -60,7 +73,6 @@ export async function getUserSelf(userId: string) {
             id: true,
             username: true,
             email: true,
-            role: true,
             birthDate: true,
 
             avatarKey: true,
@@ -86,19 +98,7 @@ export async function getUserSelf(userId: string) {
 
     if (!user || user.deletedAt) return null;
 
-    const isAdult =
-        user.birthDate != null
-            ? (() => {
-                  const now = new Date();
-                  const eighteenYearsAgo = new Date(
-                      now.getFullYear() - 18,
-                      now.getMonth(),
-                      now.getDate()
-                  );
-                  return user.birthDate <= eighteenYearsAgo;
-              })()
-            : false;
-
+    const isAdult = computeIsAdult(user.birthDate);
     const avatarUrl =
         user.avatarKey && isAdult ? await presign(user.avatarKey) : null;
 
@@ -107,6 +107,7 @@ export async function getUserSelf(userId: string) {
 
 export async function patchUserSelf(params: {
     userId: string;
+    principal: Principal;
     input: {
         bio?: string | null;
         website?: string | null;
@@ -117,6 +118,10 @@ export async function patchUserSelf(params: {
         showUploads?: boolean;
     };
 }) {
+    if (!hasPermission(params.principal, Permission.USERS_UPDATE_SELF)) {
+        throw new Error('FORBIDDEN_USERS_UPDATE_SELF');
+    }
+
     const updated = await prisma.user.update({
         where: { id: params.userId },
         data: {
@@ -144,7 +149,6 @@ export async function patchUserSelf(params: {
             id: true,
             username: true,
             email: true,
-            role: true,
             birthDate: true,
 
             avatarKey: true,
@@ -168,21 +172,17 @@ export async function patchUserSelf(params: {
         },
     });
 
-    const isAdult =
-        updated.birthDate != null
-            ? (() => {
-                  const now = new Date();
-                  const eighteenYearsAgo = new Date(
-                      now.getFullYear() - 18,
-                      now.getMonth(),
-                      now.getDate()
-                  );
-                  return updated.birthDate <= eighteenYearsAgo;
-              })()
-            : false;
-
+    const isAdult = computeIsAdult(updated.birthDate);
     const avatarUrl =
         updated.avatarKey && isAdult ? await presign(updated.avatarKey) : null;
 
     return { ...updated, avatarUrl };
+}
+
+export async function getUserRoleKeys(userId: string): Promise<string[]> {
+    const rows = await prisma.roleAssignment.findMany({
+        where: { userId },
+        select: { role: { select: { key: true } } },
+    });
+    return rows.map((r) => r.role.key);
 }

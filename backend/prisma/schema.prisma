@@ -14,15 +14,6 @@ enum MediaType {
   VIDEO
 }
 
-enum UserRole {
-  GUEST
-  UNVERIFIED
-  USER
-  TRUSTED
-  MODERATOR
-  ADMIN
-}
-
 enum RestrictionType {
   UPLOAD_BAN
   COMMENT_BAN
@@ -60,11 +51,10 @@ enum ComicStatus {
 // ==================== USERS ====================
 
 model User {
-  id        String    @id @default(uuid())
-  username  String    @unique
-  email     String    @unique
-  password  String    @map("password_hash")
-  role      UserRole  @default(UNVERIFIED)
+  id        String   @id @default(uuid())
+  username  String   @unique
+  email     String   @unique
+  password  String   @map("password_hash")
   birthDate DateTime?
 
   avatarKey String?
@@ -90,7 +80,7 @@ model User {
   ratings     Rating[]
   media       Media[]       @relation("UserUploads")
   comics      Comic[]       @relation("UserComics")
-  favorites Favorite[]
+  favorites   Favorite[]
   viewHistory ViewHistory[]
 
   reports         Report[] @relation("UserReports")
@@ -107,15 +97,77 @@ model User {
   moderatedMedia Media[]         @relation("MediaModeratedBy")
   moderationLogs ModerationLog[]
 
-  blockedHashes BlockedHash[]  @relation("BlockedHashesByUser")
-  tagHistory    TagHistory[]   @relation("TagHistoryByUser")
-  notifications Notification[] @relation("UserNotifications")
-  UserQuota     UserQuota[]
+  blockedHashes  BlockedHash[]   @relation("BlockedHashesByUser")
+  tagHistory     TagHistory[]    @relation("TagHistoryByUser")
+  notifications  Notification[]  @relation("UserNotifications")
+  UserQuota      UserQuota[]
+
+  assignments        RoleAssignment[] @relation("RoleAssignments_User")
+  assignmentsCreated RoleAssignment[] @relation("RoleAssignments_Creator")
 
   @@index([createdAt])
-  @@index([role])
   @@index([deletedAt])
   @@index([isBanned])
+}
+
+// ==================== RBAC ====================
+
+model Role {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  name        String
+  description String?
+  isSystem    Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  permissions RolePermission[]
+  assignments RoleAssignment[]
+  quotas      RoleQuota?
+
+  @@index([key])
+}
+
+model Permission {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  description String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  roles RolePermission[]
+
+  @@index([key])
+}
+
+model RolePermission {
+  id           String @id @default(uuid())
+  roleId       String
+  permissionId String
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@index([permissionId])
+}
+
+model RoleAssignment {
+  id          String   @id @default(uuid())
+  userId      String
+  roleId      String
+
+  createdAt   DateTime @default(now())
+  createdById String?
+
+  user      User  @relation("RoleAssignments_User", fields: [userId], references: [id], onDelete: Cascade)
+  role      Role  @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  createdBy User? @relation("RoleAssignments_Creator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@unique([userId, roleId])
+  @@index([roleId])
 }
 
 // ==================== QUOTAS ====================
@@ -140,10 +192,12 @@ model UserQuota {
 
 model RoleQuota {
   id        String   @id @default(uuid())
-  role      UserRole @unique
+  roleId    String   @unique
   quotas    Json
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
 }
 
 // ==================== RESTRICTIONS & WARNINGS ====================
@@ -241,7 +295,7 @@ model Media {
   comics      ComicPage[]
   comments    Comment[]
   ratings     Rating[]
-  favorites Favorite[]
+  favorites   Favorite[]
   viewHistory ViewHistory[]
 
   coverForComics    Comic[] @relation("ComicCover")
@@ -355,7 +409,7 @@ model Tag {
   customColor String?
   isExplicit  Boolean @default(false)
 
-  category   TagCategory  @relation(fields: [categoryId], references: [id])
+  category   TagCategory @relation(fields: [categoryId], references: [id])
   mediaLinks MediaTags[]
   aliases    TagAlias[]
   history    TagHistory[]
@@ -366,7 +420,6 @@ model Tag {
   @@index([usageCount])
   @@index([isExplicit])
 }
-
 
 model TagAlias {
   id    String @id @default(uuid())
@@ -476,7 +529,7 @@ model ModerationLog {
   targetId    String
   moderatorId String
 
-  details Json? // <── НОВОЕ
+  details Json?
 
   createdAt DateTime @default(now())
 

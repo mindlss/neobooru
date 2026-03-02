@@ -1,22 +1,24 @@
 import { prisma } from '../../lib/prisma';
-import { ModerationStatus, UserRole } from '@prisma/client';
+import { ModerationStatus } from '@prisma/client';
 
-type Viewer = { id: string; role: UserRole; isAdult: boolean };
+import type { PrincipalLike } from '../auth/permission.utils';
+import { hasPermission, assertPermission } from '../auth/permission.utils';
+import { Permission } from '../auth/permissions';
 
-function isModerator(viewer: Viewer) {
-    return viewer.role === UserRole.MODERATOR || viewer.role === UserRole.ADMIN;
-}
+function buildRateableWhere(mediaId: string, p: PrincipalLike | undefined) {
+    const where: any = { id: mediaId };
 
-function buildRateableWhere(mediaId: string, viewer: Viewer) {
-    if (isModerator(viewer)) return { id: mediaId };
+    if (!hasPermission(p, Permission.MEDIA_READ_DELETED)) {
+        where.deletedAt = null;
+    }
 
-    const where: any = {
-        id: mediaId,
-        deletedAt: null,
-        moderationStatus: { not: ModerationStatus.REJECTED },
-    };
+    if (!hasPermission(p, Permission.MEDIA_READ_UNMODERATED)) {
+        where.moderationStatus = ModerationStatus.APPROVED;
+    }
 
-    if (!viewer.isAdult) where.isExplicit = false;
+    if (!hasPermission(p, Permission.MEDIA_READ_EXPLICIT)) {
+        where.isExplicit = false;
+    }
 
     return where;
 }
@@ -30,7 +32,7 @@ async function applyRatingDeltaToComics(
     tx: any,
     mediaId: string,
     deltaSum: number,
-    deltaCount: number
+    deltaCount: number,
 ) {
     if (deltaSum === 0 && deltaCount === 0) return;
 
@@ -68,11 +70,13 @@ export async function setRating(input: {
     mediaId: string;
     userId: string;
     value: number;
-    viewer: Viewer;
+    principal: PrincipalLike | undefined;
 }) {
+    assertPermission(input.principal, Permission.RATINGS_SET);
+
     return prisma.$transaction(async (tx) => {
         const media = await tx.media.findFirst({
-            where: buildRateableWhere(input.mediaId, input.viewer),
+            where: buildRateableWhere(input.mediaId, input.principal),
             select: {
                 id: true,
                 ratingSum: true,
@@ -115,7 +119,6 @@ export async function setRating(input: {
 
                 newSum += input.value - existing.value;
             }
-            // count unchanged
         }
 
         const ratingAvg = computeAvg(newSum, newCount);
@@ -151,11 +154,13 @@ export async function setRating(input: {
 export async function removeRating(input: {
     mediaId: string;
     userId: string;
-    viewer: Viewer;
+    principal: PrincipalLike | undefined;
 }) {
+    assertPermission(input.principal, Permission.RATINGS_REMOVE);
+
     return prisma.$transaction(async (tx) => {
         const media = await tx.media.findFirst({
-            where: buildRateableWhere(input.mediaId, input.viewer),
+            where: buildRateableWhere(input.mediaId, input.principal),
             select: {
                 id: true,
                 ratingSum: true,
@@ -176,7 +181,6 @@ export async function removeRating(input: {
         });
 
         if (!existing) {
-            // idempotent
             return {
                 mediaId: media.id,
                 ratingAvg: computeAvg(media.ratingSum, media.ratingCount),

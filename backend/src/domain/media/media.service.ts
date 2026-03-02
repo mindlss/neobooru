@@ -1,58 +1,61 @@
 import { prisma } from '../../lib/prisma';
 import { minio } from '../../lib/minio';
 import { env } from '../../config/env';
-import { ModerationStatus, UserRole } from '@prisma/client';
+import { ModerationStatus } from '@prisma/client';
 
-type Viewer = { id?: string; role: UserRole; isAdult: boolean } | undefined;
+import { Permission } from '../auth/permissions';
+import { hasPermission, type PrincipalLike } from '../auth/permission.utils';
 
-function isModerator(viewer: Viewer) {
-    return (
-        viewer?.role === UserRole.MODERATOR || viewer?.role === UserRole.ADMIN
-    );
+type Principal = PrincipalLike | undefined;
+
+function canReadDeleted(p: Principal) {
+    return hasPermission(p, Permission.MEDIA_READ_DELETED);
 }
 
-function isGuest(viewer: Viewer) {
-    return !viewer || viewer.role === UserRole.GUEST;
+function canReadUnmoderated(p: Principal) {
+    return hasPermission(p, Permission.MEDIA_READ_UNMODERATED);
 }
 
-function buildVisibilityWhere(viewer: Viewer) {
-    if (isModerator(viewer)) return {};
+function canReadExplicit(p: Principal) {
+    return hasPermission(p, Permission.MEDIA_READ_EXPLICIT);
+}
 
-    if (isGuest(viewer)) {
-        return {
-            deletedAt: null,
-            moderationStatus: ModerationStatus.APPROVED,
-            isExplicit: false,
-        };
+function buildVisibilityWhere(p: Principal) {
+    // Deleted
+    const deletedFilter = canReadDeleted(p) ? {} : { deletedAt: null };
+
+    // Moderation status
+    // - guest: only APPROVED
+    // - authed: not REJECTED (allows PENDING) (как было раньше)
+    // - staff: any (via MEDIA_READ_UNMODERATED)
+    let moderationFilter: any = {};
+    if (!canReadUnmoderated(p)) {
+        moderationFilter = p?.id
+            ? { moderationStatus: { not: ModerationStatus.REJECTED } }
+            : { moderationStatus: ModerationStatus.APPROVED };
     }
 
-    const base: any = {
-        deletedAt: null,
-        moderationStatus: { not: ModerationStatus.REJECTED },
-    };
+    // Explicit
+    const explicitFilter = canReadExplicit(p) ? {} : { isExplicit: false };
 
-    if (!viewer?.isAdult) {
-        base.isExplicit = false;
-    }
-
-    return base;
+    return { ...deletedFilter, ...moderationFilter, ...explicitFilter };
 }
 
 async function presign(key: string) {
     return minio.presignedGetObject(
         env.MINIO_BUCKET,
         key,
-        env.MINIO_PRESIGN_EXPIRES
+        env.MINIO_PRESIGN_EXPIRES,
     );
 }
 
-function filterTagLinksForViewer(tagLinks: any[], viewer: Viewer) {
-    if (viewer?.isAdult) return tagLinks ?? [];
+function filterTagLinksForViewer(tagLinks: any[], p: Principal) {
+    if (canReadExplicit(p)) return tagLinks ?? [];
     return (tagLinks ?? []).filter((l: any) => !l?.tag?.isExplicit);
 }
 
-function mapMedia(m: any, viewer: Viewer) {
-    const visibleLinks = filterTagLinksForViewer(m.tagLinks ?? [], viewer);
+function mapMedia(m: any, p: Principal) {
+    const visibleLinks = filterTagLinksForViewer(m.tagLinks ?? [], p);
 
     const tags =
         (visibleLinks ?? []).map((l: any) => ({
@@ -112,32 +115,32 @@ function mapMedia(m: any, viewer: Viewer) {
     };
 }
 
-function buildFavoriteInclude(viewer: Viewer) {
-    if (!viewer?.id) return false;
+function buildFavoriteInclude(p: Principal) {
+    if (!p?.id) return false;
 
     return {
         favorites: {
-            where: { userId: viewer.id },
+            where: { userId: p.id },
             select: { id: true },
             take: 1,
         },
     };
 }
 
-function buildMyRatingInclude(viewer: Viewer) {
-    if (!viewer?.id) return false;
+function buildMyRatingInclude(p: Principal) {
+    if (!p?.id) return false;
 
     return {
         ratings: {
-            where: { userId: viewer.id },
+            where: { userId: p.id },
             select: { value: true },
             take: 1,
         },
     };
 }
 
-export async function getMediaByIdVisible(id: string, viewer: Viewer) {
-    const where = { id, ...buildVisibilityWhere(viewer) };
+export async function getMediaByIdVisible(id: string, principal: Principal) {
+    const where = { id, ...buildVisibilityWhere(principal) };
 
     const media = await prisma.media.findFirst({
         where,
@@ -145,21 +148,19 @@ export async function getMediaByIdVisible(id: string, viewer: Viewer) {
             tagLinks: {
                 include: {
                     tag: {
-                        include: {
-                            category: true,
-                        },
+                        include: { category: true },
                     },
                 },
                 orderBy: { addedAt: 'asc' },
             },
-            ...(buildFavoriteInclude(viewer) as any),
-            ...(buildMyRatingInclude(viewer) as any),
+            ...(buildFavoriteInclude(principal) as any),
+            ...(buildMyRatingInclude(principal) as any),
         },
     });
 
     if (!media) return null;
 
-    const dto = mapMedia(media, viewer);
+    const dto = mapMedia(media, principal);
 
     const originalUrl = await presign(media.originalKey);
     const previewUrl = media.previewKey
@@ -170,14 +171,14 @@ export async function getMediaByIdVisible(id: string, viewer: Viewer) {
 }
 
 export async function listMediaVisible(params: {
-    viewer: Viewer;
+    principal: Principal;
     limit: number;
     cursor?: string;
     sort: 'new' | 'old';
     type?: 'IMAGE' | 'VIDEO';
 }) {
     const take = Math.min(Math.max(params.limit, 1), 100);
-    const where: any = buildVisibilityWhere(params.viewer);
+    const where: any = buildVisibilityWhere(params.principal);
 
     if (params.type) where.type = params.type;
 
@@ -193,24 +194,22 @@ export async function listMediaVisible(params: {
         ...(params.cursor ? { cursor: { id: params.cursor }, skip: 1 } : {}),
         include: {
             tagLinks: {
-                include: {
-                    tag: { include: { category: true } },
-                },
+                include: { tag: { include: { category: true } } },
                 orderBy: { addedAt: 'asc' },
             },
-            ...(buildFavoriteInclude(params.viewer) as any),
-            ...(buildMyRatingInclude(params.viewer) as any),
+            ...(buildFavoriteInclude(params.principal) as any),
+            ...(buildMyRatingInclude(params.principal) as any),
         },
     });
 
     const nextCursor = items.length > take ? items[take].id : null;
-    const data = items.slice(0, take).map((m) => mapMedia(m, params.viewer));
+    const data = items.slice(0, take).map((m) => mapMedia(m, params.principal));
 
     const withUrls = await Promise.all(
         data.map(async (m) => ({
             ...m,
             previewUrl: m.previewKey ? await presign(m.previewKey) : null,
-        }))
+        })),
     );
 
     return { data: withUrls, nextCursor };
@@ -225,7 +224,7 @@ export type MediaBlockedReason =
 
 export async function getMediaByIdOrBlocked(
     id: string,
-    viewer: Viewer
+    principal: Principal,
 ): Promise<
     | { kind: 'ok'; media: Awaited<ReturnType<typeof getMediaByIdVisible>> }
     | { kind: 'blocked'; reason: MediaBlockedReason }
@@ -235,56 +234,48 @@ export async function getMediaByIdOrBlocked(
         include: {
             tagLinks: {
                 include: {
-                    tag: {
-                        include: {
-                            category: true,
-                        },
-                    },
+                    tag: { include: { category: true } },
                 },
                 orderBy: { addedAt: 'asc' },
             },
-            ...(buildFavoriteInclude(viewer) as any),
-            ...(buildMyRatingInclude(viewer) as any),
+            ...(buildFavoriteInclude(principal) as any),
+            ...(buildMyRatingInclude(principal) as any),
         },
     });
 
     if (!media) return { kind: 'blocked', reason: 'NOT_FOUND' };
 
-    if (isModerator(viewer)) {
-        const dto = mapMedia(media, viewer);
-        const originalUrl = await presign(media.originalKey);
-        const previewUrl = media.previewKey
-            ? await presign(media.previewKey)
-            : null;
-        return {
-            kind: 'ok',
-            media: { ...dto, originalUrl, previewUrl } as any,
-        };
-    }
+    // Staff/mod-like bypass via perms:
+    const unmoderated = canReadUnmoderated(principal);
+    const deletedOk = canReadDeleted(principal);
+    const explicitOk = canReadExplicit(principal);
 
-    if (media.deletedAt) return { kind: 'blocked', reason: 'DELETED' };
+    if (!deletedOk && media.deletedAt)
+        return { kind: 'blocked', reason: 'DELETED' };
 
-    if (isGuest(viewer)) {
-        if (media.moderationStatus !== ModerationStatus.APPROVED) {
-            return {
-                kind: 'blocked',
-                reason:
-                    media.moderationStatus === ModerationStatus.PENDING
-                        ? 'PENDING'
-                        : 'REJECTED',
-            };
-        }
-        if (media.isExplicit) return { kind: 'blocked', reason: 'EXPLICIT' };
-    } else {
-        if (media.moderationStatus === ModerationStatus.REJECTED) {
-            return { kind: 'blocked', reason: 'REJECTED' };
-        }
-        if (!viewer?.isAdult && media.isExplicit) {
-            return { kind: 'blocked', reason: 'EXPLICIT' };
+    if (!unmoderated) {
+        if (!principal?.id) {
+            if (media.moderationStatus !== ModerationStatus.APPROVED) {
+                return {
+                    kind: 'blocked',
+                    reason:
+                        media.moderationStatus === ModerationStatus.PENDING
+                            ? 'PENDING'
+                            : 'REJECTED',
+                };
+            }
+        } else {
+            if (media.moderationStatus === ModerationStatus.REJECTED) {
+                return { kind: 'blocked', reason: 'REJECTED' };
+            }
         }
     }
 
-    const dto = mapMedia(media, viewer);
+    if (!explicitOk && media.isExplicit) {
+        return { kind: 'blocked', reason: 'EXPLICIT' };
+    }
+
+    const dto = mapMedia(media, principal);
     const originalUrl = await presign(media.originalKey);
     const previewUrl = media.previewKey
         ? await presign(media.previewKey)

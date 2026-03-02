@@ -18,7 +18,7 @@ import { createReadStream } from 'node:fs';
 import { promises as fs } from 'node:fs';
 
 import { apiError } from '../errors/ApiError';
-import { ensureViewer, requireCurrentUser } from '../tsoa/context';
+import { requireCurrentUser } from '../tsoa/context';
 import { requireNotBanned } from '../tsoa/guards';
 
 import {
@@ -27,10 +27,15 @@ import {
 } from '../schemas/user.schemas';
 import { mediaListQuerySchema } from '../schemas/media.schemas';
 
+import { prisma } from '../../lib/prisma';
+import { Permission, Scope } from '../../domain/auth/permissions';
+
 import {
+    computeIsAdult,
     getUserPublicById,
     getUserSelf,
     patchUserSelf,
+    getUserRoleKeys,
 } from '../../domain/users/user.service';
 
 import {
@@ -43,7 +48,7 @@ import {
 import { uploadUserAvatarFromTemp } from '../../domain/users/avatar.service';
 
 import { toUserPublicDTO, toUserSelfDTO } from '../dto/user.dto';
-import { MediaVisibleDTO, toMediaDTO } from '../dto/media.dto';
+import { type MediaVisibleDTO, toMediaDTO } from '../dto/media.dto';
 import { toCommentDTO } from '../dto/comment.dto';
 
 import type {
@@ -65,37 +70,86 @@ async function sha256File(filepath: string): Promise<string> {
     });
 }
 
+async function loadViewer(
+    req: ExpressRequest,
+): Promise<{ id?: string; isAdult: boolean } | undefined> {
+    if (!req.user?.id) return undefined;
+
+    const u = await prisma.user.findUnique({
+        where: { id: req.user.id },
+        select: { id: true, birthDate: true, deletedAt: true },
+    });
+
+    if (!u || u.deletedAt) return undefined;
+
+    return { id: u.id, isAdult: computeIsAdult(u.birthDate) };
+}
+
+function dtoViewerFromReq(
+    req: ExpressRequest,
+): { permissions?: string[] } | undefined {
+    if (!req.user) return undefined;
+    return { permissions: req.user.permissions ?? [] };
+}
+
+function principalFromReq(req: ExpressRequest) {
+    if (!req.user?.id) return undefined;
+    return { id: req.user.id, permissions: req.user.permissions ?? [] };
+}
+
 @Route('users')
 @Tags('Users')
 export class UsersController extends Controller {
     /**
+     * GET /users/me
+     */
+    @Get('me')
+    @Security('cookieAuth', [Scope.LOAD_PERMISSIONS])
+    public async getMe(@Request() req: ExpressRequest): Promise<UserSelfDTO> {
+        await requireCurrentUser(req);
+
+        const user = await getUserSelf(req.user!.id);
+        if (!user) throw apiError(401, 'UNAUTHORIZED', 'User not found');
+
+        const roles = await getUserRoleKeys(req.user!.id);
+
+        return toUserSelfDTO({
+            ...user,
+            roles,
+            permissions: req.user?.permissions ?? [],
+        });
+    }
+
+    /**
      * GET /users/:id
-     * public profile, viewer-aware
      */
     @Get('{id}')
-    @Security('optionalCookieAuth')
+    @Security('optionalCookieAuth', [
+        Scope.LOAD_PERMISSIONS,
+        Permission.USERS_READ,
+    ])
     public async getUserPublic(
         @Path() id: string,
         @Request() req: ExpressRequest,
     ): Promise<UserPublicDTO> {
-        await ensureViewer(req);
-
         const params = userIdParamsSchema.parse({ id });
+        const viewer = await loadViewer(req);
 
         const user = await getUserPublicById({
             userId: params.id,
-            viewer: req.viewer,
+            principal: principalFromReq(req),
+            viewer,
         });
-        if (!user) throw apiError(404, 'NOT_FOUND', 'User not found');
 
+        if (!user) throw apiError(404, 'NOT_FOUND', 'User not found');
         return toUserPublicDTO(user);
     }
 
-    /**
-     * GET /users/:id/uploads
-     */
     @Get('{id}/uploads')
-    @Security('optionalCookieAuth')
+    @Security('optionalCookieAuth', [
+        Scope.LOAD_PERMISSIONS,
+        Permission.USERS_READ,
+    ])
     public async getUserUploads(
         @Path() id: string,
         @Request() req: ExpressRequest,
@@ -104,14 +158,15 @@ export class UsersController extends Controller {
         @Query() sort?: 'new' | 'old',
         @Query() type?: 'IMAGE' | 'VIDEO',
     ): Promise<UserMediaListResponseDTO> {
-        await ensureViewer(req);
-
         const params = userIdParamsSchema.parse({ id });
         const q = mediaListQuerySchema.parse({ limit, cursor, sort, type });
 
+        const viewer = await loadViewer(req);
+
         const result = await listUserUploads({
             userId: params.id,
-            viewer: req.viewer,
+            principal: principalFromReq(req),
+            viewer,
             limit: q.limit,
             cursor: q.cursor,
             sort: q.sort,
@@ -123,22 +178,21 @@ export class UsersController extends Controller {
         if (result.kind === 'private')
             throw apiError(403, 'PROFILE_PRIVATE', 'Uploads are hidden');
 
+        const dtoViewer = dtoViewerFromReq(req);
+
         return {
             data: result.data.map((m) =>
-                toMediaDTO(
-                    m,
-                    req.viewer ? { role: req.viewer.role } : undefined,
-                ),
+                toMediaDTO(m, dtoViewer),
             ) as MediaVisibleDTO[],
             nextCursor: result.nextCursor,
         };
     }
 
-    /**
-     * GET /users/:id/favorites
-     */
     @Get('{id}/favorites')
-    @Security('optionalCookieAuth')
+    @Security('optionalCookieAuth', [
+        Scope.LOAD_PERMISSIONS,
+        Permission.USERS_READ,
+    ])
     public async getUserFavorites(
         @Path() id: string,
         @Request() req: ExpressRequest,
@@ -147,14 +201,15 @@ export class UsersController extends Controller {
         @Query() sort?: 'new' | 'old',
         @Query() type?: 'IMAGE' | 'VIDEO',
     ): Promise<UserMediaListResponseDTO> {
-        await ensureViewer(req);
-
         const params = userIdParamsSchema.parse({ id });
         const q = mediaListQuerySchema.parse({ limit, cursor, sort, type });
 
+        const viewer = await loadViewer(req);
+
         const result = await listUserFavorites({
             userId: params.id,
-            viewer: req.viewer,
+            principal: principalFromReq(req),
+            viewer,
             limit: q.limit,
             cursor: q.cursor,
             sort: q.sort,
@@ -166,22 +221,21 @@ export class UsersController extends Controller {
         if (result.kind === 'private')
             throw apiError(403, 'PROFILE_PRIVATE', 'Favorites are hidden');
 
+        const dtoViewer = dtoViewerFromReq(req);
+
         return {
             data: result.data.map((m) =>
-                toMediaDTO(
-                    m,
-                    req.viewer ? { role: req.viewer.role } : undefined,
-                ),
+                toMediaDTO(m, dtoViewer),
             ) as MediaVisibleDTO[],
             nextCursor: result.nextCursor,
         };
     }
 
-    /**
-     * GET /users/:id/comments
-     */
     @Get('{id}/comments')
-    @Security('optionalCookieAuth')
+    @Security('optionalCookieAuth', [
+        Scope.LOAD_PERMISSIONS,
+        Permission.USERS_READ,
+    ])
     public async getUserComments(
         @Path() id: string,
         @Request() req: ExpressRequest,
@@ -189,16 +243,17 @@ export class UsersController extends Controller {
         @Query() cursor?: string,
         @Query() sort?: 'new' | 'old',
     ): Promise<UserCommentsListResponseDTO> {
-        await ensureViewer(req);
-
         const params = userIdParamsSchema.parse({ id });
         const q = mediaListQuerySchema
             .pick({ limit: true, cursor: true, sort: true })
             .parse({ limit, cursor, sort });
 
+        const viewer = await loadViewer(req);
+
         const result = await listUserComments({
             userId: params.id,
-            viewer: req.viewer,
+            principal: principalFromReq(req),
+            viewer,
             limit: q.limit,
             cursor: q.cursor,
             sort: q.sort,
@@ -209,22 +264,19 @@ export class UsersController extends Controller {
         if (result.kind === 'private')
             throw apiError(403, 'PROFILE_PRIVATE', 'Comments are hidden');
 
+        const principal = principalFromReq(req);
+
         return {
-            data: result.data.map((c: any) =>
-                toCommentDTO(
-                    c,
-                    req.viewer ? { role: req.viewer.role } : undefined,
-                ),
-            ),
+            data: result.data.map((c: any) => toCommentDTO(c, principal)),
             nextCursor: result.nextCursor,
         };
     }
 
-    /**
-     * GET /users/:id/ratings
-     */
     @Get('{id}/ratings')
-    @Security('optionalCookieAuth')
+    @Security('optionalCookieAuth', [
+        Scope.LOAD_PERMISSIONS,
+        Permission.USERS_READ,
+    ])
     public async getUserRatings(
         @Path() id: string,
         @Request() req: ExpressRequest,
@@ -233,14 +285,15 @@ export class UsersController extends Controller {
         @Query() sort?: 'new' | 'old',
         @Query() type?: 'IMAGE' | 'VIDEO',
     ): Promise<UserRatingsListResponseDTO> {
-        await ensureViewer(req);
-
         const params = userIdParamsSchema.parse({ id });
         const q = mediaListQuerySchema.parse({ limit, cursor, sort, type });
 
+        const viewer = await loadViewer(req);
+
         const result = await listUserRatings({
             userId: params.id,
-            viewer: req.viewer,
+            principal: principalFromReq(req),
+            viewer,
             limit: q.limit,
             cursor: q.cursor,
             sort: q.sort,
@@ -252,14 +305,13 @@ export class UsersController extends Controller {
         if (result.kind === 'private')
             throw apiError(403, 'PROFILE_PRIVATE', 'Ratings are hidden');
 
+        const dtoViewer = dtoViewerFromReq(req);
+
         return {
             data: result.data.map(
                 (x: any): UserRatingItemDTO => ({
                     value: x.value,
-                    media: toMediaDTO(
-                        x.media,
-                        req.viewer ? { role: req.viewer.role } : undefined,
-                    ) as MediaVisibleDTO,
+                    media: toMediaDTO(x.media, dtoViewer) as MediaVisibleDTO,
                 }),
             ),
             nextCursor: result.nextCursor,
@@ -267,26 +319,13 @@ export class UsersController extends Controller {
     }
 
     /**
-     * GET /users/me
-     * auth required
-     */
-    @Get('me')
-    @Security('cookieAuth')
-    public async getMe(@Request() req: ExpressRequest): Promise<UserSelfDTO> {
-        await requireCurrentUser(req);
-
-        const user = await getUserSelf(req.currentUser!.id);
-        if (!user) throw apiError(401, 'UNAUTHORIZED', 'User not found');
-
-        return toUserSelfDTO(user);
-    }
-
-    /**
      * PATCH /users/me
-     * auth required + not banned
      */
     @Patch('me')
-    @Security('cookieAuth')
+    @Security('cookieAuth', [
+        Scope.LOAD_PERMISSIONS,
+        Permission.USERS_UPDATE_SELF,
+    ])
     public async patchMe(
         @Request() req: ExpressRequest,
         @Body() body: unknown,
@@ -297,7 +336,8 @@ export class UsersController extends Controller {
         const data = userPatchSelfSchema.parse(body);
 
         const updated = await patchUserSelf({
-            userId: req.currentUser!.id,
+            userId: req.user!.id,
+            principal: principalFromReq(req)!,
             input: data,
         });
 
@@ -306,10 +346,12 @@ export class UsersController extends Controller {
 
     /**
      * POST /users/me/avatar
-     * multipart/form-data: avatar (file)
      */
     @Post('me/avatar')
-    @Security('cookieAuth')
+    @Security('cookieAuth', [
+        Scope.LOAD_PERMISSIONS,
+        Permission.USERS_AVATAR_UPDATE_SELF,
+    ])
     public async uploadMyAvatar(
         @Request() req: ExpressRequest,
         @UploadedFile('avatar') avatar?: Express.Multer.File,
@@ -317,9 +359,8 @@ export class UsersController extends Controller {
         await requireCurrentUser(req);
         requireNotBanned(req.currentUser);
 
-        if (!avatar?.path) {
+        if (!avatar?.path)
             throw apiError(400, 'NO_FILE', 'avatar file is required');
-        }
 
         const tmpPath = avatar.path;
 
@@ -333,13 +374,12 @@ export class UsersController extends Controller {
 
         try {
             await uploadUserAvatarFromTemp({
-                userId: req.currentUser!.id,
+                userId: req.user!.id,
                 tmpPath,
                 sha256,
             });
         } catch (e: any) {
             await fs.unlink(tmpPath).catch(() => {});
-
             if (e?.message === 'UNSUPPORTED_AVATAR_TYPE') {
                 throw apiError(
                     415,
@@ -347,16 +387,14 @@ export class UsersController extends Controller {
                     'Allowed: jpeg/png/webp',
                 );
             }
-            if (e?.message === 'NO_FILE') {
+            if (e?.message === 'NO_FILE')
                 throw apiError(400, 'NO_FILE', 'avatar file is required');
-            }
-            if (e?.message === 'FILE_TOO_LARGE') {
+            if (e?.message === 'FILE_TOO_LARGE')
                 throw apiError(413, 'FILE_TOO_LARGE', 'avatar too large');
-            }
             throw e;
         }
 
-        const me = await getUserSelf(req.currentUser!.id);
+        const me = await getUserSelf(req.user!.id);
         if (!me) throw apiError(401, 'UNAUTHORIZED', 'User not found');
 
         return toUserSelfDTO(me);

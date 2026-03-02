@@ -12,11 +12,10 @@ import {
     Tags,
 } from 'tsoa';
 import type { Request as ExpressRequest } from 'express';
-import { UserRole } from '@prisma/client';
 
 import { apiError } from '../errors/ApiError';
 import { requireCurrentUser } from '../tsoa/context';
-import { requireNotBanned, requireRole } from '../tsoa/guards';
+import { requireNotBanned } from '../tsoa/guards';
 
 import {
     comicIdParamsSchema,
@@ -46,54 +45,46 @@ import {
     type OkResponseDTO,
 } from '../dto/comics.dto';
 
-const comicRoles: UserRole[] = [
-    UserRole.USER,
-    UserRole.TRUSTED,
-    UserRole.MODERATOR,
-    UserRole.ADMIN,
-];
+import { Scope, Permission } from '../../domain/auth/permissions';
 
 @Route('comics')
 @Tags('Comics')
 export class ComicsController extends Controller {
     /**
      * POST /comics
-     * auth required + not banned + role allowed
+     * auth required + not banned + permissions loaded
      */
     @Post()
-    @Security('cookieAuth')
+    @Security('cookieAuth', [Scope.LOAD_PERMISSIONS, Permission.COMICS_CREATE])
     public async createComic(
         @Body() body: CreateComicBodyDTO,
         @Request() req: ExpressRequest,
     ): Promise<ComicResponseDTO> {
         await requireCurrentUser(req);
         requireNotBanned(req.currentUser);
-        requireRole(req.viewer!.role, comicRoles);
 
         const data = createComicBodySchema.parse(body);
 
         try {
             const created = await createComic({
                 title: data.title,
-                viewer: {
-                    id: req.currentUser!.id,
-                    role: req.currentUser!.role,
-                },
+                principal: req.user!,
             });
 
             this.setStatus(201);
+
             const full = await getComic({
                 comicId: created.id,
-                viewer: {
-                    id: req.currentUser!.id,
-                    role: req.currentUser!.role,
-                },
+                principal: req.user!,
             });
 
             return { data: toComicDTO(full) };
         } catch (e: any) {
             if (e?.message === 'TITLE_INVALID') {
                 throw apiError(400, 'TITLE_INVALID', 'Invalid title');
+            }
+            if (e?.message === 'FORBIDDEN') {
+                throw apiError(403, 'FORBIDDEN', 'Forbidden');
             }
             throw apiError(
                 500,
@@ -105,27 +96,23 @@ export class ComicsController extends Controller {
 
     /**
      * GET /comics/:id
-     * auth required (по твоему роутеру)
+     * auth required + perms loaded
      */
     @Get('{id}')
-    @Security('cookieAuth')
+    @Security('cookieAuth', [Scope.LOAD_PERMISSIONS])
     public async getComic(
         @Path() id: string,
         @Request() req: ExpressRequest,
     ): Promise<ComicResponseDTO> {
         await requireCurrentUser(req);
         requireNotBanned(req.currentUser);
-        requireRole(req.viewer!.role, comicRoles);
 
         const params = comicIdParamsSchema.parse({ id });
 
         try {
             const data = await getComic({
                 comicId: params.id,
-                viewer: {
-                    id: req.currentUser!.id,
-                    role: req.currentUser!.role,
-                },
+                principal: req.user!,
             });
             return { data: toComicDTO(data) };
         } catch (e: any) {
@@ -147,7 +134,7 @@ export class ComicsController extends Controller {
      * PATCH /comics/:id
      */
     @Patch('{id}')
-    @Security('cookieAuth')
+    @Security('cookieAuth', [Scope.LOAD_PERMISSIONS])
     public async updateComic(
         @Path() id: string,
         @Body() body: UpdateComicBodyDTO,
@@ -155,7 +142,6 @@ export class ComicsController extends Controller {
     ): Promise<ComicResponseDTO> {
         await requireCurrentUser(req);
         requireNotBanned(req.currentUser);
-        requireRole(req.viewer!.role, comicRoles);
 
         const params = comicIdParamsSchema.parse({ id });
         const data = updateComicBodySchema.parse(body);
@@ -163,19 +149,13 @@ export class ComicsController extends Controller {
         try {
             await updateComic({
                 comicId: params.id,
-                viewer: {
-                    id: req.currentUser!.id,
-                    role: req.currentUser!.role,
-                },
+                principal: req.user!,
                 ...data,
             });
 
             const full = await getComic({
                 comicId: params.id,
-                viewer: {
-                    id: req.currentUser!.id,
-                    role: req.currentUser!.role,
-                },
+                principal: req.user!,
             });
 
             return { data: toComicDTO(full) };
@@ -204,7 +184,7 @@ export class ComicsController extends Controller {
      * POST /comics/:id/pages
      */
     @Post('{id}/pages')
-    @Security('cookieAuth')
+    @Security('cookieAuth', [Scope.LOAD_PERMISSIONS])
     public async addComicPage(
         @Path() id: string,
         @Body() body: AddComicPageBodyDTO,
@@ -212,7 +192,6 @@ export class ComicsController extends Controller {
     ): Promise<ComicResponseDTO> {
         await requireCurrentUser(req);
         requireNotBanned(req.currentUser);
-        requireRole(req.viewer!.role, comicRoles);
 
         const params = comicIdParamsSchema.parse({ id });
         const data = addPageBodySchema.parse(body);
@@ -222,20 +201,14 @@ export class ComicsController extends Controller {
                 comicId: params.id,
                 mediaId: data.mediaId,
                 position: data.position,
-                viewer: {
-                    id: req.currentUser!.id,
-                    role: req.currentUser!.role,
-                },
+                principal: req.user!,
             });
 
             this.setStatus(201);
 
             const full = await getComic({
                 comicId: params.id,
-                viewer: {
-                    id: req.currentUser!.id,
-                    role: req.currentUser!.role,
-                },
+                principal: req.user!,
             });
 
             return { data: toComicDTO(full) };
@@ -271,7 +244,7 @@ export class ComicsController extends Controller {
      * DELETE /comics/:id/pages/:mediaId
      */
     @Delete('{id}/pages/{mediaId}')
-    @Security('cookieAuth')
+    @Security('cookieAuth', [Scope.LOAD_PERMISSIONS])
     public async removeComicPage(
         @Path() id: string,
         @Path() mediaId: string,
@@ -279,7 +252,6 @@ export class ComicsController extends Controller {
     ): Promise<OkResponseDTO> {
         await requireCurrentUser(req);
         requireNotBanned(req.currentUser);
-        requireRole(req.viewer!.role, comicRoles);
 
         const params = removePageParamsSchema.parse({ id, mediaId });
 
@@ -287,10 +259,7 @@ export class ComicsController extends Controller {
             await removeComicPage({
                 comicId: params.id,
                 mediaId: params.mediaId,
-                viewer: {
-                    id: req.currentUser!.id,
-                    role: req.currentUser!.role,
-                },
+                principal: req.user!,
             });
             return { ok: true };
         } catch (e: any) {
@@ -312,7 +281,7 @@ export class ComicsController extends Controller {
      * POST /comics/:id/pages/reorder
      */
     @Post('{id}/pages/reorder')
-    @Security('cookieAuth')
+    @Security('cookieAuth', [Scope.LOAD_PERMISSIONS])
     public async reorderPages(
         @Path() id: string,
         @Body() body: ReorderComicPagesBodyDTO,
@@ -320,7 +289,6 @@ export class ComicsController extends Controller {
     ): Promise<OkResponseDTO> {
         await requireCurrentUser(req);
         requireNotBanned(req.currentUser);
-        requireRole(req.viewer!.role, comicRoles);
 
         const params = comicIdParamsSchema.parse({ id });
         const data = reorderPagesBodySchema.parse(body);
@@ -329,10 +297,7 @@ export class ComicsController extends Controller {
             await reorderComicPages({
                 comicId: params.id,
                 orderedMediaIds: data.orderedMediaIds,
-                viewer: {
-                    id: req.currentUser!.id,
-                    role: req.currentUser!.role,
-                },
+                principal: req.user!,
             });
 
             return { ok: true };

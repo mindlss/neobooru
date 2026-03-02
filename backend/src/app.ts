@@ -53,7 +53,7 @@ export function createApp() {
                     };
                 },
             },
-        })
+        }),
     );
 
     app.use(express.json({ limit: '2mb' }));

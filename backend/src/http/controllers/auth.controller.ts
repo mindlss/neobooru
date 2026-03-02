@@ -1,7 +1,6 @@
 import {
     Body,
     Controller,
-    Example,
     Post,
     Request,
     Response,
@@ -20,6 +19,7 @@ import { registerUser, loginUser } from '../../domain/auth/auth.service';
 import {
     signAccessToken,
     signRefreshToken,
+    verifyAccessToken,
     verifyRefreshToken,
 } from '../../domain/auth/token.service';
 
@@ -33,6 +33,7 @@ import {
 import type { ErrorEnvelopeDTO } from '../dto/error.dto';
 import type { OkDTO } from '../dto/common.dto';
 import { registerSchema, loginSchema } from '../schemas/auth.schemas';
+import { revokeToken } from '../../domain/auth/tokenBlacklist.service';
 
 @Route('auth')
 @Tags('Auth')
@@ -50,7 +51,7 @@ export class AuthController extends Controller {
     })
     public async register(
         @Body() body: RegisterBodyDTO,
-        @Request() req: ExpressRequest
+        @Request() req: ExpressRequest,
     ): Promise<AuthResponseDTO> {
         const data = registerSchema.parse(body);
         const result = await registerUser(data);
@@ -80,7 +81,7 @@ export class AuthController extends Controller {
     })
     public async login(
         @Body() body: LoginBodyDTO,
-        @Request() req: ExpressRequest
+        @Request() req: ExpressRequest,
     ): Promise<AuthResponseDTO> {
         const data = loginSchema.parse(body);
         const result = await loginUser(data);
@@ -96,25 +97,27 @@ export class AuthController extends Controller {
         const refreshToken = (req as any).cookies?.refreshToken as
             | string
             | undefined;
+
         if (!refreshToken) {
             throw apiError(401, 'UNAUTHORIZED', 'Missing refresh token');
         }
 
-        let payload: { sub: string; role: any };
+        let payload;
         try {
-            payload = verifyRefreshToken(refreshToken);
+            payload = await verifyRefreshToken(refreshToken);
         } catch {
             throw apiError(401, 'UNAUTHORIZED', 'Invalid refresh token');
         }
 
-        const newAccess = signAccessToken({
-            sub: payload.sub,
-            role: payload.role,
+        // rotate refresh: revoke old refresh token by jti until exp
+        await revokeToken({
+            kind: 'refresh',
+            jti: payload.jti,
+            exp: payload.exp,
         });
-        const newRefresh = signRefreshToken({
-            sub: payload.sub,
-            role: payload.role,
-        });
+
+        const newAccess = signAccessToken({ sub: payload.sub });
+        const newRefresh = signRefreshToken({ sub: payload.sub });
 
         const res = this.mustGetRes(req);
         this.setAuthCookies(res, newAccess, newRefresh);
@@ -125,6 +128,31 @@ export class AuthController extends Controller {
     @Post('logout')
     @Security('cookieAuth')
     public async logout(@Request() req: ExpressRequest): Promise<OkDTO> {
+        const accessToken = (req as any).cookies?.accessToken as
+            | string
+            | undefined;
+        const refreshToken = (req as any).cookies?.refreshToken as
+            | string
+            | undefined;
+
+        if (accessToken) {
+            try {
+                const p = await verifyAccessToken(accessToken);
+                await revokeToken({ kind: 'access', jti: p.jti, exp: p.exp });
+            } catch {
+                // ignore
+            }
+        }
+
+        if (refreshToken) {
+            try {
+                const p = await verifyRefreshToken(refreshToken);
+                await revokeToken({ kind: 'refresh', jti: p.jti, exp: p.exp });
+            } catch {
+                // ignore
+            }
+        }
+
         const res = this.mustGetRes(req);
         this.clearAuthCookies(res);
         return { status: 'ok' };
@@ -143,7 +171,7 @@ export class AuthController extends Controller {
     private setAuthCookies(
         res: ExpressResponse,
         accessToken: string,
-        refreshToken: string
+        refreshToken: string,
     ) {
         const isProd = env.NODE_ENV === 'production';
 
@@ -159,13 +187,13 @@ export class AuthController extends Controller {
             httpOnly: true,
             secure: isProd,
             sameSite: 'lax',
-            path: '/auth/refresh',
+            path: '/',
             maxAge: env.JWT_REFRESH_EXPIRES_IN * 1000,
         });
     }
 
     private clearAuthCookies(res: ExpressResponse) {
         res.cookie('accessToken', '', { path: '/', maxAge: 0 });
-        res.cookie('refreshToken', '', { path: '/auth/refresh', maxAge: 0 });
+        res.cookie('refreshToken', '', { path: '/', maxAge: 0 });
     }
 }

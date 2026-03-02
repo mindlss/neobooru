@@ -1,18 +1,14 @@
-import type { User, UserRole } from '@prisma/client';
+import type { User } from '@prisma/client';
+import type { Principal } from '../http/tsoa/authentication';
 
 declare global {
     namespace Express {
         interface Request {
-            user?: {
-                id: string;
-                role: UserRole;
-            };
-
+            user?: Principal;
             currentUser?: User;
 
             viewer?: {
                 id?: string;
-                role: UserRole;
                 isAdult: boolean;
             };
 

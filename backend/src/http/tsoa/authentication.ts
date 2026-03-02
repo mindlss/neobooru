@@ -1,14 +1,9 @@
 import type { Request } from 'express';
 import { verifyAccessToken } from '../../domain/auth/token.service';
 import { apiError } from '../errors/ApiError';
-import { UserRole } from '@prisma/client';
 import { env } from '../../config/env';
-
-function isUserRole(v: unknown): v is UserRole {
-    return (
-        typeof v === 'string' && Object.values(UserRole).includes(v as UserRole)
-    );
-}
+import { prisma } from '../../lib/prisma';
+import { Scope } from '../../domain/auth/permissions';
 
 function readAccessTokenFromCookie(req: Request): string | null {
     const token = (req as any).cookies?.accessToken;
@@ -24,70 +19,122 @@ function readBearerFallback(req: Request): string | null {
     return token || null;
 }
 
+async function loadUserMinimal(userId: string) {
+    return prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, deletedAt: true },
+    });
+}
+
+async function loadUserPermissions(userId: string): Promise<string[]> {
+    const rows = await prisma.permission.findMany({
+        where: {
+            roles: {
+                some: {
+                    role: { assignments: { some: { userId } } },
+                },
+            },
+        },
+        select: { key: true },
+    });
+
+    return Array.from(new Set(rows.map((r) => r.key)));
+}
+
+function hasAll(perms: string[], required: string[]) {
+    const set = new Set(perms);
+    return required.every((p) => set.has(p));
+}
+
+export type Principal = { id: string; permissions?: string[] };
+
+function splitScopes(scopes?: string[]) {
+    const requiredPerms: string[] = [];
+    let forceLoad = false;
+
+    for (const s of scopes ?? []) {
+        if (s === Scope.LOAD_PERMISSIONS) forceLoad = true;
+        else requiredPerms.push(s);
+    }
+
+    return { requiredPerms, forceLoad };
+}
+
 /**
- * tsoa hook: called from generated routes when you use @Security(...)
+ * - cookieAuth: token required, missing/deleted user => 401
+ * - optionalCookieAuth: token optional, missing/deleted user => undefined (guest)
  *
- * - @Security("cookieAuth")           -> requires accessToken cookie (401 if missing/invalid)
- * - @Security("optionalCookieAuth")   -> parses cookie if present, ignores if missing/invalid
- *
- * Scopes are used for roles: @Security("cookieAuth", ["ADMIN"])
+ * scopes:
+ * - permission keys (checked)
+ * - plus optional service scope: "auth.load_permissions" (forces loading permissions into principal)
  */
 export async function expressAuthentication(
     req: Request,
     securityName: string,
-    scopes?: string[]
-): Promise<any> {
+    scopes?: string[],
+): Promise<Principal | undefined> {
     const token =
         readAccessTokenFromCookie(req) ??
         (env.NODE_ENV !== 'production' ? readBearerFallback(req) : null);
+
+    const { requiredPerms, forceLoad } = splitScopes(scopes);
+    const needPerms = forceLoad || requiredPerms.length > 0;
 
     if (securityName === 'optionalCookieAuth') {
         if (!token) return undefined;
 
         try {
-            const payload = verifyAccessToken(token);
+            const payload = await verifyAccessToken(token);
 
-            const role = isUserRole(payload.role)
-                ? payload.role
-                : UserRole.UNVERIFIED;
-            const principal = { id: payload.sub, role };
+            const u = await loadUserMinimal(payload.sub);
+            if (!u || u.deletedAt) return undefined;
 
-            if (scopes?.length) {
-                const allowed = new Set(scopes);
-                if (!allowed.has(principal.role)) {
-                    throw apiError(403, 'FORBIDDEN', 'Insufficient role', {
-                        required: scopes,
-                        got: principal.role,
+            const principal: Principal = { id: u.id };
+
+            if (needPerms) {
+                const permissions = await loadUserPermissions(u.id);
+
+                if (
+                    requiredPerms.length &&
+                    !hasAll(permissions, requiredPerms)
+                ) {
+                    throw apiError(403, 'FORBIDDEN', 'Missing permissions', {
+                        required: requiredPerms,
                     });
                 }
+
+                principal.permissions = permissions;
             }
 
             return principal;
-        } catch {
+        } catch (e) {
+            if ((e as any)?.status === 403) throw e;
             return undefined;
         }
     }
 
     if (securityName === 'cookieAuth') {
-        if (!token) {
-            throw apiError(401, 'UNAUTHORIZED', 'Missing access token');
+        if (!token) throw apiError(401, 'UNAUTHORIZED', 'Missing access token');
+
+        const payload = await verifyAccessToken(token);
+
+        const u = await loadUserMinimal(payload.sub);
+        if (!u || u.deletedAt) {
+            throw apiError(401, 'UNAUTHORIZED', 'User not found');
         }
 
-        const payload = verifyAccessToken(token);
+        const principal: Principal = { id: u.id };
 
-        const role = isUserRole(payload.role)
-            ? payload.role
-            : UserRole.UNVERIFIED;
-        const principal = { id: payload.sub, role };
+        if (needPerms) {
+            const permissions = await loadUserPermissions(u.id);
 
-        if (scopes?.length) {
-            const allowed = new Set(scopes);
-            if (!allowed.has(principal.role)) {
-                throw apiError(403, 'FORBIDDEN', 'Insufficient role', {
-                    required: scopes,
-                    got: principal.role,
+            if (requiredPerms.length && !hasAll(permissions, requiredPerms)) {
+                throw apiError(403, 'FORBIDDEN', 'Missing permissions', {
+                    required: requiredPerms,
                 });
             }
+
+            principal.permissions = permissions;
         }
 
         return principal;

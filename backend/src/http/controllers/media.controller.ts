@@ -1,5 +1,7 @@
 import {
+    Consumes,
     Controller,
+    FormField,
     Get,
     Path,
     Post,
@@ -9,13 +11,14 @@ import {
     Security,
     SuccessResponse,
     Tags,
+    UploadedFile,
 } from 'tsoa';
 import type { Request as ExpressRequest } from 'express';
 
 import { apiError } from '../errors/ApiError';
-import { ensureViewer, requireCurrentUser } from '../tsoa/context';
+import { requireCurrentUser } from '../tsoa/context';
 
-import { RestrictionType, UserRole } from '@prisma/client';
+import { RestrictionType } from '@prisma/client';
 
 import { mediaListQuerySchema } from '../schemas/media.schemas';
 
@@ -24,52 +27,38 @@ import {
     listMediaVisible,
 } from '../../domain/media/media.service';
 
-import {
-    parseMultipartToTemp,
-    uploadMediaFromTemp,
-} from '../../domain/media/upload.service';
+import { uploadMediaFromMulterFile } from '../../domain/media/upload.service';
 
 import {
     toMediaDTO,
     toMediaUploadDTO,
-    type MediaPublicDTO,
-    type MediaUserDTO,
-    type MediaModeratorDTO,
     type MediaUploadDTO,
-    MediaVisibleDTO,
-    MediaListResponseDTO,
+    type MediaVisibleDTO,
+    type MediaListResponseDTO,
 } from '../dto/media.dto';
 
-import {
-    requireNotBanned,
-    requireRole,
-    requireNoActiveRestriction,
-} from '../tsoa/guards';
+import { requireNotBanned, requireNoActiveRestriction } from '../tsoa/guards';
 
-// -------------------- Controller --------------------
+import { Permission, Scope } from '../../domain/auth/permissions';
 
 @Route('media')
 @Tags('Media')
 export class MediaController extends Controller {
     /**
      * GET /media/:id
-     * public, viewer-aware
+     * public, principal-aware (optional auth)
      */
     @Get('{id}')
-    @Security('optionalCookieAuth')
+    @Security('optionalCookieAuth', [Scope.LOAD_PERMISSIONS])
     public async getMedia(
         @Path() id: string,
         @Request() req: ExpressRequest,
     ): Promise<MediaVisibleDTO> {
-        await ensureViewer(req);
-
-        const result = await getMediaByIdOrBlocked(id, req.viewer);
+        const result = await getMediaByIdOrBlocked(id, req.user);
 
         if (result.kind === 'ok') {
-            return toMediaDTO(
-                result.media!,
-                req.viewer ? { role: req.viewer.role } : undefined,
-            ) as MediaVisibleDTO;
+            // Передаём principal как viewer-like.
+            return toMediaDTO(result.media!, req.user) as MediaVisibleDTO;
         }
 
         switch (result.reason) {
@@ -96,10 +85,10 @@ export class MediaController extends Controller {
 
     /**
      * GET /media
-     * public, viewer-aware
+     * public, principal-aware (optional auth)
      */
     @Get()
-    @Security('optionalCookieAuth')
+    @Security('optionalCookieAuth', [Scope.LOAD_PERMISSIONS])
     public async listMedia(
         @Request() req: ExpressRequest,
         @Query() limit?: number,
@@ -107,12 +96,10 @@ export class MediaController extends Controller {
         @Query() sort?: string,
         @Query() type?: string,
     ): Promise<MediaListResponseDTO> {
-        await ensureViewer(req);
-
         const q = mediaListQuerySchema.parse({ limit, cursor, sort, type });
 
         const result = await listMediaVisible({
-            viewer: req.viewer,
+            principal: req.user,
             limit: q.limit,
             cursor: q.cursor,
             sort: q.sort,
@@ -121,10 +108,7 @@ export class MediaController extends Controller {
 
         return {
             data: result.data.map((m) =>
-                toMediaDTO(
-                    m,
-                    req.viewer ? { role: req.viewer.role } : undefined,
-                ),
+                toMediaDTO(m, req.user),
             ) as MediaVisibleDTO[],
             nextCursor: result.nextCursor,
         };
@@ -132,75 +116,54 @@ export class MediaController extends Controller {
 
     /**
      * POST /media/upload
-     * auth required, role restricted, ban + restriction checks
-     *
-     * NOTE: multipart parsing is implemented by parseMultipartToTemp(req).
-     * Swagger multipart form can be added later via tsoa+multer config.
+     * auth required + perms + ban + restriction checks
      */
     @Post('upload')
-    @Security('cookieAuth')
+    @Consumes('multipart/form-data')
+    @Security('cookieAuth', [Scope.LOAD_PERMISSIONS, Permission.MEDIA_UPLOAD])
     @SuccessResponse(201, 'Created')
     public async uploadMedia(
         @Request() req: ExpressRequest,
+        @UploadedFile('file') file?: Express.Multer.File,
+        @FormField() description?: string,
+        @FormField() tags?: string,
     ): Promise<MediaUploadDTO> {
-        // loads req.currentUser + req.viewer (and throws 401 if missing)
         await requireCurrentUser(req);
-
         requireNotBanned(req.currentUser);
-
-        requireRole(req.viewer!.role, [
-            UserRole.TRUSTED,
-            UserRole.MODERATOR,
-            UserRole.ADMIN,
-        ]);
 
         await requireNoActiveRestriction(req.currentUser!.id, [
             RestrictionType.UPLOAD_BAN,
             RestrictionType.FULL_BAN,
         ]);
 
-        let parsed: any;
-        try {
-            parsed = await parseMultipartToTemp(req);
-        } catch (e: any) {
-            const msg = e?.message;
-
-            if (msg === 'NO_FILE') {
-                throw apiError(400, 'NO_FILE', 'file is required');
-            }
-
-            if (msg === 'FILE_TOO_LARGE') {
-                throw apiError(413, 'FILE_TOO_LARGE', 'File too large');
-            }
-
-            throw apiError(400, 'BAD_MULTIPART', 'invalid multipart upload');
+        if (!file) {
+            throw apiError(400, 'NO_FILE', 'file is required');
         }
 
         try {
-            const media = await uploadMediaFromTemp({
-                tmpPath: parsed.tmpPath,
-                sha256: parsed.sha256,
-                size: parsed.size,
-                mimeType: parsed.mimeType,
+            const media = await uploadMediaFromMulterFile({
+                file,
                 uploadedById: req.currentUser!.id,
-                description: parsed.description,
-                tagsRaw: parsed.tagsRaw,
+                description,
+                tagsRaw: tags,
             });
 
             this.setStatus(201);
             return toMediaUploadDTO(media);
         } catch (e: any) {
-            const msg = e?.message;
-
-            if (msg === 'BLOCKED_HASH') {
+            if (
+                e?.message === 'FILE_TOO_LARGE' ||
+                e?.code === 'LIMIT_FILE_SIZE'
+            ) {
+                throw apiError(413, 'FILE_TOO_LARGE', 'File too large');
+            }
+            if (e?.message === 'BLOCKED_HASH') {
                 throw apiError(403, 'BLOCKED_HASH', 'file hash is blocked');
             }
-
-            if (msg === 'DUPLICATE_HASH') {
+            if (e?.message === 'DUPLICATE_HASH') {
                 throw apiError(409, 'DUPLICATE_HASH', 'file already exists');
             }
-
-            if (msg === 'UNSUPPORTED_MEDIA_TYPE') {
+            if (e?.message === 'UNSUPPORTED_MEDIA_TYPE') {
                 throw apiError(
                     415,
                     'UNSUPPORTED_MEDIA_TYPE',

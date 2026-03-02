@@ -1,39 +1,48 @@
 import { prisma } from '../../lib/prisma';
 import { minio } from '../../lib/minio';
 import { env } from '../../config/env';
-import { ModerationStatus, UserRole } from '@prisma/client';
+import { ModerationStatus } from '@prisma/client';
+import { Permission } from '../auth/permissions';
+import type { Principal } from '../auth/principal';
+import { hasPermission } from '../auth/permission.utils';
 
-type Viewer = { id?: string; role: UserRole; isAdult: boolean } | undefined;
-
-function isModerator(viewer: Viewer) {
-    return (
-        viewer?.role === UserRole.MODERATOR || viewer?.role === UserRole.ADMIN
-    );
-}
+type Viewer = { id?: string; isAdult: boolean } | undefined;
 
 function isOwner(viewer: Viewer, userId: string) {
     return !!viewer?.id && viewer.id === userId;
 }
 
-function buildVisibilityWhere(viewer: Viewer) {
-    if (isModerator(viewer)) return {};
+/**
+ * visibility policy:
+ * - deleted media requires MEDIA_READ_DELETED
+ * - unmoderated media requires MEDIA_READ_UNMODERATED (otherwise only APPROVED)
+ * - explicit media:
+ *    - if viewer.isAdult -> ok
+ *    - else requires MEDIA_READ_EXPLICIT
+ */
+function buildVisibilityWhere(params: {
+    viewer: Viewer;
+    principal: Principal;
+}) {
+    const where: any = {};
 
-    if (!viewer || viewer.role === UserRole.GUEST) {
-        return {
-            deletedAt: null,
-            moderationStatus: ModerationStatus.APPROVED,
-            isExplicit: false,
-        };
+    if (!hasPermission(params.principal, Permission.MEDIA_READ_DELETED)) {
+        where.deletedAt = null;
     }
 
-    const base: any = {
-        deletedAt: null,
-        moderationStatus: { not: ModerationStatus.REJECTED },
-    };
+    if (!hasPermission(params.principal, Permission.MEDIA_READ_UNMODERATED)) {
+        where.moderationStatus = ModerationStatus.APPROVED;
+    } else {
+        // staff can see pending/rejected too, no filter
+    }
 
-    if (!viewer.isAdult) base.isExplicit = false;
+    const allowExplicit =
+        !!params.viewer?.isAdult ||
+        hasPermission(params.principal, Permission.MEDIA_READ_EXPLICIT);
 
-    return base;
+    if (!allowExplicit) where.isExplicit = false;
+
+    return where;
 }
 
 async function presign(key: string) {
@@ -97,9 +106,12 @@ function mapMedia(m: any, viewer: Viewer) {
     };
 }
 
-async function getTargetUserForSection(userId: string, viewer: Viewer) {
+async function getTargetUserForSection(params: {
+    userId: string;
+    principal: Principal;
+}) {
     const u = await prisma.user.findUnique({
-        where: { id: userId },
+        where: { id: params.userId },
         select: {
             id: true,
             deletedAt: true,
@@ -111,25 +123,40 @@ async function getTargetUserForSection(userId: string, viewer: Viewer) {
     });
 
     if (!u) return null;
-    if (u.deletedAt && !isModerator(viewer)) return null;
+
+    if (
+        u.deletedAt &&
+        !hasPermission(params.principal, Permission.USERS_READ_DELETED)
+    ) {
+        return null;
+    }
 
     return u;
 }
 
 export async function listUserUploads(params: {
     userId: string;
+    principal: Principal;
     viewer: Viewer;
     limit: number;
     cursor?: string;
     sort: 'new' | 'old';
     type?: 'IMAGE' | 'VIDEO';
 }) {
-    const target = await getTargetUserForSection(params.userId, params.viewer);
+    const target = await getTargetUserForSection({
+        userId: params.userId,
+        principal: params.principal,
+    });
     if (!target) return { kind: 'not_found' as const };
+
+    const canSeePrivate = hasPermission(
+        params.principal,
+        Permission.USERS_READ_PRIVATE,
+    );
 
     if (
         !target.showUploads &&
-        !isModerator(params.viewer) &&
+        !canSeePrivate &&
         !isOwner(params.viewer, params.userId)
     ) {
         return { kind: 'private' as const };
@@ -139,7 +166,10 @@ export async function listUserUploads(params: {
 
     const where: any = {
         uploadedById: params.userId,
-        ...buildVisibilityWhere(params.viewer),
+        ...buildVisibilityWhere({
+            viewer: params.viewer,
+            principal: params.principal,
+        }),
     };
     if (params.type) where.type = params.type;
 
@@ -176,18 +206,27 @@ export async function listUserUploads(params: {
 
 export async function listUserFavorites(params: {
     userId: string;
+    principal: Principal;
     viewer: Viewer;
     limit: number;
     cursor?: string;
     sort: 'new' | 'old';
     type?: 'IMAGE' | 'VIDEO';
 }) {
-    const target = await getTargetUserForSection(params.userId, params.viewer);
+    const target = await getTargetUserForSection({
+        userId: params.userId,
+        principal: params.principal,
+    });
     if (!target) return { kind: 'not_found' as const };
+
+    const canSeePrivate = hasPermission(
+        params.principal,
+        Permission.USERS_READ_PRIVATE,
+    );
 
     if (
         !target.showFavorites &&
-        !isModerator(params.viewer) &&
+        !canSeePrivate &&
         !isOwner(params.viewer, params.userId)
     ) {
         return { kind: 'private' as const };
@@ -195,7 +234,10 @@ export async function listUserFavorites(params: {
 
     const take = Math.min(Math.max(params.limit, 1), 100);
 
-    const mediaVisibility = buildVisibilityWhere(params.viewer);
+    const mediaVisibility = buildVisibilityWhere({
+        viewer: params.viewer,
+        principal: params.principal,
+    });
 
     const orderBy =
         params.sort === 'old'
@@ -242,17 +284,26 @@ export async function listUserFavorites(params: {
 
 export async function listUserComments(params: {
     userId: string;
+    principal: Principal;
     viewer: Viewer;
     limit: number;
     cursor?: string;
     sort: 'new' | 'old';
 }) {
-    const target = await getTargetUserForSection(params.userId, params.viewer);
+    const target = await getTargetUserForSection({
+        userId: params.userId,
+        principal: params.principal,
+    });
     if (!target) return { kind: 'not_found' as const };
+
+    const canSeePrivate = hasPermission(
+        params.principal,
+        Permission.USERS_READ_PRIVATE,
+    );
 
     if (
         !target.showComments &&
-        !isModerator(params.viewer) &&
+        !canSeePrivate &&
         !isOwner(params.viewer, params.userId)
     ) {
         return { kind: 'private' as const };
@@ -268,13 +319,16 @@ export async function listUserComments(params: {
     const items = await prisma.comment.findMany({
         where: {
             userId: params.userId,
-            media: buildVisibilityWhere(params.viewer) as any,
+            media: buildVisibilityWhere({
+                viewer: params.viewer,
+                principal: params.principal,
+            }) as any,
         },
         orderBy: orderBy as any,
         take: take + 1,
         ...(params.cursor ? { cursor: { id: params.cursor }, skip: 1 } : {}),
         include: {
-            user: { select: { id: true, username: true, role: true } },
+            user: { select: { id: true, username: true } },
         },
     });
 
@@ -289,18 +343,27 @@ export async function listUserComments(params: {
 
 export async function listUserRatings(params: {
     userId: string;
+    principal: Principal;
     viewer: Viewer;
     limit: number;
     cursor?: string;
     sort: 'new' | 'old';
     type?: 'IMAGE' | 'VIDEO';
 }) {
-    const target = await getTargetUserForSection(params.userId, params.viewer);
+    const target = await getTargetUserForSection({
+        userId: params.userId,
+        principal: params.principal,
+    });
     if (!target) return { kind: 'not_found' as const };
+
+    const canSeePrivate = hasPermission(
+        params.principal,
+        Permission.USERS_READ_PRIVATE,
+    );
 
     if (
         !target.showRatings &&
-        !isModerator(params.viewer) &&
+        !canSeePrivate &&
         !isOwner(params.viewer, params.userId)
     ) {
         return { kind: 'private' as const };
@@ -308,7 +371,10 @@ export async function listUserRatings(params: {
 
     const take = Math.min(Math.max(params.limit, 1), 100);
 
-    const mediaVisibility = buildVisibilityWhere(params.viewer);
+    const mediaVisibility = buildVisibilityWhere({
+        viewer: params.viewer,
+        principal: params.principal,
+    });
 
     const orderBy =
         params.sort === 'old'

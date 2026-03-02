@@ -1,18 +1,31 @@
 import { prisma } from '../../lib/prisma';
-import { Prisma, UserRole, ComicStatus } from '@prisma/client';
+import { Prisma, ComicStatus } from '@prisma/client';
+import { Permission } from '../auth/permissions';
+import { hasPermission } from '../auth/permission.utils';
 
-type Viewer = { id: string; role: UserRole };
+type Principal = { id: string; permissions?: string[] };
 
 const COMIC_PAGE_TAG = 'comic_page';
 const GENERAL_CATEGORY = 'general';
 
-function isModerator(viewer: Viewer) {
-    return viewer.role === UserRole.MODERATOR || viewer.role === UserRole.ADMIN;
+function assertCanReadComic(p: Principal, comic: { createdById: string }) {
+    if (hasPermission(p, Permission.COMICS_READ_ANY)) return;
+    if (
+        comic.createdById === p.id &&
+        hasPermission(p, Permission.COMICS_READ_OWN)
+    )
+        return;
+    throw new Error('FORBIDDEN');
 }
 
-function assertCanEditComic(viewer: Viewer, comic: { createdById: string }) {
-    if (isModerator(viewer)) return;
-    if (comic.createdById !== viewer.id) throw new Error('FORBIDDEN');
+function assertCanEditComic(p: Principal, comic: { createdById: string }) {
+    if (hasPermission(p, Permission.COMICS_EDIT_ANY)) return;
+    if (
+        comic.createdById === p.id &&
+        hasPermission(p, Permission.COMICS_EDIT_OWN)
+    )
+        return;
+    throw new Error('FORBIDDEN');
 }
 
 function normalizeTagName(name: string) {
@@ -21,10 +34,14 @@ function normalizeTagName(name: string) {
 
 async function assertCanUseMedia(
     tx: Prisma.TransactionClient,
-    viewer: Viewer,
-    mediaId: string
+    principal: Principal,
+    mediaId: string,
 ) {
-    if (isModerator(viewer)) return;
+    if (hasPermission(principal, Permission.MEDIA_USE_ANY)) return;
+
+    if (!hasPermission(principal, Permission.MEDIA_USE_OWN)) {
+        throw new Error('FORBIDDEN_MEDIA');
+    }
 
     const m = await tx.media.findUnique({
         where: { id: mediaId },
@@ -32,7 +49,7 @@ async function assertCanUseMedia(
     });
 
     if (!m || m.deletedAt) throw new Error('MEDIA_NOT_FOUND');
-    if (m.uploadedById !== viewer.id) throw new Error('FORBIDDEN_MEDIA');
+    if (m.uploadedById !== principal.id) throw new Error('FORBIDDEN_MEDIA');
 }
 
 async function getSystemTagId(tx: Prisma.TransactionClient, name: string) {
@@ -48,7 +65,6 @@ async function getSystemTagId(tx: Prisma.TransactionClient, name: string) {
         where: { name: n },
         select: { id: true },
     });
-
     if (existing) return existing.id;
 
     const created = await tx.tag.create({
@@ -62,7 +78,7 @@ async function getSystemTagId(tx: Prisma.TransactionClient, name: string) {
 async function ensureMediaHasTag(
     tx: Prisma.TransactionClient,
     mediaId: string,
-    tagId: string
+    tagId: string,
 ) {
     const exists = await tx.mediaTags.findUnique({
         where: { mediaId_tagId: { mediaId, tagId } },
@@ -81,7 +97,7 @@ async function ensureMediaHasTag(
 async function removeMediaTagIfPresent(
     tx: Prisma.TransactionClient,
     mediaId: string,
-    tagId: string
+    tagId: string,
 ) {
     const exists = await tx.mediaTags.findUnique({
         where: { mediaId_tagId: { mediaId, tagId } },
@@ -99,7 +115,7 @@ async function removeMediaTagIfPresent(
 
 async function recomputeMediaComicFlagAndTag(
     tx: Prisma.TransactionClient,
-    mediaId: string
+    mediaId: string,
 ) {
     const cnt = await tx.comicPage.count({ where: { mediaId } });
     const isComicPage = cnt > 0;
@@ -120,7 +136,7 @@ async function recomputeMediaComicFlagAndTag(
 
 async function recomputeLastPageMediaId(
     tx: Prisma.TransactionClient,
-    comicId: string
+    comicId: string,
 ) {
     const last = await tx.comicPage.findFirst({
         where: { comicId },
@@ -142,7 +158,7 @@ function computeAvg(sum: number, count: number) {
 async function addPageTagsToComicTags(
     tx: Prisma.TransactionClient,
     comicId: string,
-    mediaId: string
+    mediaId: string,
 ) {
     const comicPageTagId = await getSystemTagId(tx, COMIC_PAGE_TAG);
 
@@ -152,7 +168,9 @@ async function addPageTagsToComicTags(
     });
 
     const tagIds = Array.from(
-        new Set(links.map((l) => l.tagId).filter((id) => id !== comicPageTagId))
+        new Set(
+            links.map((l) => l.tagId).filter((id) => id !== comicPageTagId),
+        ),
     );
 
     if (tagIds.length === 0) return;
@@ -166,7 +184,7 @@ async function addPageTagsToComicTags(
 async function maybeRemovePageTagsFromComicTags(
     tx: Prisma.TransactionClient,
     comicId: string,
-    removedMediaId: string
+    removedMediaId: string,
 ) {
     const comicPageTagId = await getSystemTagId(tx, COMIC_PAGE_TAG);
 
@@ -179,8 +197,8 @@ async function maybeRemovePageTagsFromComicTags(
         new Set(
             removedLinks
                 .map((l) => l.tagId)
-                .filter((id) => id !== comicPageTagId)
-        )
+                .filter((id) => id !== comicPageTagId),
+        ),
     );
 
     if (candidateTagIds.length === 0) return;
@@ -198,7 +216,6 @@ async function maybeRemovePageTagsFromComicTags(
 
     const stillSet = new Set(still.map((s) => s.tagId));
     const toDelete = candidateTagIds.filter((id) => !stillSet.has(id));
-
     if (toDelete.length === 0) return;
 
     await tx.comicTags.deleteMany({
@@ -208,7 +225,7 @@ async function maybeRemovePageTagsFromComicTags(
 
 async function recomputeComicExplicitIfNeeded(
     tx: Prisma.TransactionClient,
-    comicId: string
+    comicId: string,
 ) {
     const cnt = await tx.comicPage.count({
         where: { comicId, media: { isExplicit: true } },
@@ -220,14 +237,21 @@ async function recomputeComicExplicitIfNeeded(
     });
 }
 
-export async function createComic(input: { title: string; viewer: Viewer }) {
+export async function createComic(input: {
+    title: string;
+    principal: Principal;
+}) {
+    if (!hasPermission(input.principal, Permission.COMICS_CREATE)) {
+        throw new Error('FORBIDDEN');
+    }
+
     const title = input.title.trim();
     if (!title) throw new Error('TITLE_INVALID');
 
     return prisma.comic.create({
         data: {
             title,
-            createdById: input.viewer.id,
+            createdById: input.principal.id,
         },
         select: {
             id: true,
@@ -242,7 +266,7 @@ export async function createComic(input: { title: string; viewer: Viewer }) {
 
 export async function updateComic(input: {
     comicId: string;
-    viewer: Viewer;
+    principal: Principal;
     title?: string;
     status?: ComicStatus;
     coverMediaId?: string | null;
@@ -253,10 +277,11 @@ export async function updateComic(input: {
             select: { id: true, createdById: true },
         });
         if (!comic) throw new Error('NOT_FOUND');
-        assertCanEditComic(input.viewer, comic);
+
+        assertCanEditComic(input.principal, comic);
 
         if (input.coverMediaId !== undefined && input.coverMediaId !== null) {
-            await assertCanUseMedia(tx, input.viewer, input.coverMediaId);
+            await assertCanUseMedia(tx, input.principal, input.coverMediaId);
         }
 
         return tx.comic.update({
@@ -284,7 +309,7 @@ export async function updateComic(input: {
 export async function addComicPage(input: {
     comicId: string;
     mediaId: string;
-    viewer: Viewer;
+    principal: Principal;
     position?: number;
 }) {
     return prisma.$transaction(async (tx) => {
@@ -302,9 +327,9 @@ export async function addComicPage(input: {
             },
         });
         if (!comic) throw new Error('NOT_FOUND');
-        assertCanEditComic(input.viewer, comic);
 
-        await assertCanUseMedia(tx, input.viewer, input.mediaId);
+        assertCanEditComic(input.principal, comic);
+        await assertCanUseMedia(tx, input.principal, input.mediaId);
 
         const already = await tx.comicPage.findUnique({
             where: {
@@ -345,7 +370,6 @@ export async function addComicPage(input: {
         });
 
         await recomputeMediaComicFlagAndTag(tx, input.mediaId);
-
         await addPageTagsToComicTags(tx, input.comicId, input.mediaId);
 
         const m = await tx.media.findUnique({
@@ -368,8 +392,8 @@ export async function addComicPage(input: {
                 ...(comic.isExplicit
                     ? {}
                     : m.isExplicit
-                    ? { isExplicit: true }
-                    : {}),
+                      ? { isExplicit: true }
+                      : {}),
             },
         });
 
@@ -382,7 +406,7 @@ export async function addComicPage(input: {
 export async function removeComicPage(input: {
     comicId: string;
     mediaId: string;
-    viewer: Viewer;
+    principal: Principal;
 }) {
     return prisma.$transaction(async (tx) => {
         const comic = await tx.comic.findUnique({
@@ -397,7 +421,8 @@ export async function removeComicPage(input: {
             },
         });
         if (!comic) throw new Error('NOT_FOUND');
-        assertCanEditComic(input.viewer, comic);
+
+        assertCanEditComic(input.principal, comic);
 
         const page = await tx.comicPage.findUnique({
             where: {
@@ -427,7 +452,7 @@ export async function removeComicPage(input: {
         await maybeRemovePageTagsFromComicTags(
             tx,
             input.comicId,
-            input.mediaId
+            input.mediaId,
         );
 
         const newSum = comic.ratingSum - m.ratingSum;
@@ -467,7 +492,7 @@ export async function removeComicPage(input: {
 export async function reorderComicPages(input: {
     comicId: string;
     orderedMediaIds: string[];
-    viewer: Viewer;
+    principal: Principal;
 }) {
     return prisma.$transaction(async (tx) => {
         const comic = await tx.comic.findUnique({
@@ -475,7 +500,8 @@ export async function reorderComicPages(input: {
             select: { id: true, createdById: true },
         });
         if (!comic) throw new Error('NOT_FOUND');
-        assertCanEditComic(input.viewer, comic);
+
+        assertCanEditComic(input.principal, comic);
 
         const pages = await tx.comicPage.findMany({
             where: { comicId: input.comicId },
@@ -522,7 +548,10 @@ export async function reorderComicPages(input: {
     });
 }
 
-export async function getComic(input: { comicId: string; viewer?: Viewer }) {
+export async function getComic(input: {
+    comicId: string;
+    principal: Principal;
+}) {
     return prisma.$transaction(async (tx) => {
         const comic = await tx.comic.findUnique({
             where: { id: input.comicId },
@@ -545,13 +574,7 @@ export async function getComic(input: { comicId: string; viewer?: Viewer }) {
 
         if (!comic) throw new Error('NOT_FOUND');
 
-        if (
-            input.viewer &&
-            !isModerator(input.viewer) &&
-            comic.createdById !== input.viewer.id
-        ) {
-            throw new Error('FORBIDDEN');
-        }
+        assertCanReadComic(input.principal, comic);
 
         const pages = await tx.comicPage.findMany({
             where: { comicId: input.comicId },

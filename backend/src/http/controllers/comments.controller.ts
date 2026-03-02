@@ -15,7 +15,7 @@ import {
 import type { Request as ExpressRequest } from 'express';
 
 import { apiError } from '../errors/ApiError';
-import { ensureViewer, requireCurrentUser } from '../tsoa/context';
+import { requireCurrentUser } from '../tsoa/context';
 
 import { mediaIdParamsSchema } from '../schemas/media.schemas';
 import {
@@ -32,9 +32,8 @@ import {
 
 import { toCommentDTO, type CommentDTO } from '../dto/comment.dto';
 import type { OkDTO } from '../dto/common.dto';
-import { requireAdult } from '../tsoa/guards';
 
-// -------------------- Swagger DTOs --------------------
+import { Permission, Scope } from '../../domain/auth/permissions';
 
 type CommentsListResponseDTO = {
     data: CommentDTO[];
@@ -50,35 +49,28 @@ type DeleteCommentBodyDTO = {
     reason?: string;
 };
 
-// -------------------- Controller --------------------
-
 @Route('')
 @Tags('Comments')
 export class CommentsController extends Controller {
     /**
-     * List comments for media (viewer-aware, public)
      * GET /media/:id/comments
+     * Скрываем эндпоинт через permission (если нет perms -> 401/403 на auth этапе)
      */
     @Get('media/{id}/comments')
-    @Security('optionalCookieAuth')
+    @Security('cookieAuth', [Permission.COMMENTS_READ])
     public async listComments(
         @Path() id: string,
         @Request() req: ExpressRequest,
         @Query() limit?: number,
         @Query() cursor?: string,
-        @Query() sort?: string
+        @Query() sort?: string,
     ): Promise<CommentsListResponseDTO> {
-        // guest | user
-        await ensureViewer(req);
-
-        requireAdult(req.viewer, 'COMMENTS_ADULTS_ONLY');
-
         const params = mediaIdParamsSchema.parse({ id });
         const q = commentsListQuerySchema.parse({ limit, cursor, sort });
 
         const result = await listCommentsForMedia({
             mediaId: params.id,
-            viewer: req.viewer,
+            principal: req.user,
             limit: q.limit,
             cursor: q.cursor,
             sort: q.sort,
@@ -90,31 +82,31 @@ export class CommentsController extends Controller {
 
         return {
             data: result.data.map((c) =>
+                // DTO у тебя всё ещё на viewer.role — оставляем совместимость:
+                // если user есть — даём role из БД в comment.user.role, а viewer роль тут не критична
                 toCommentDTO(
                     c,
-                    req.viewer ? { role: req.viewer.role } : undefined
-                )
+                    req.user
+                        ? ({ role: (c.user as any).role } as any)
+                        : undefined,
+                ),
             ),
             nextCursor: result.nextCursor,
         };
     }
 
     /**
-     * Create comment (auth required)
      * POST /media/:id/comments
      */
     @Post('media/{id}/comments')
-    @Security('cookieAuth')
+    @Security('cookieAuth', [Permission.COMMENTS_CREATE])
     @SuccessResponse(201, 'Created')
     public async createMediaComment(
         @Path() id: string,
         @Body() body: CreateCommentBodyDTO,
-        @Request() req: ExpressRequest
+        @Request() req: ExpressRequest,
     ): Promise<CommentDTO> {
-        // guarantees currentUser + viewer
         await requireCurrentUser(req);
-
-        requireAdult(req.viewer, 'COMMENTS_ADULTS_ONLY');
 
         const params = mediaIdParamsSchema.parse({ id });
         const parsedBody = createCommentSchema.parse(body);
@@ -122,14 +114,19 @@ export class CommentsController extends Controller {
         try {
             const created = await createComment({
                 mediaId: params.id,
+                principal: req.user,
                 userId: req.currentUser!.id,
-                viewer: req.viewer!,
                 content: parsedBody.content,
                 parentId: parsedBody.parentId ?? null,
             });
 
             this.setStatus(201);
-            return toCommentDTO(created, { role: req.viewer!.role });
+            return toCommentDTO(
+                created,
+                req.user
+                    ? ({ role: (created.user as any).role } as any)
+                    : undefined,
+            );
         } catch (e: any) {
             if (e?.message === 'NOT_FOUND') {
                 throw apiError(404, 'NOT_FOUND', 'Media not found');
@@ -138,7 +135,7 @@ export class CommentsController extends Controller {
                 throw apiError(
                     400,
                     'PARENT_NOT_FOUND',
-                    'Parent comment not found'
+                    'Parent comment not found',
                 );
             }
             throw e;
@@ -146,19 +143,17 @@ export class CommentsController extends Controller {
     }
 
     /**
-     * Soft-delete comment (owner or mod/admin)
      * DELETE /comments/:id
+     * any-of (own or any) -> поэтому только LOAD_PERMISSIONS, а дальше доменная проверка.
      */
     @Delete('comments/{id}')
-    @Security('cookieAuth')
+    @Security('cookieAuth', [Scope.LOAD_PERMISSIONS])
     public async deleteCommentById(
         @Path() id: string,
         @Body() body: DeleteCommentBodyDTO,
-        @Request() req: ExpressRequest
+        @Request() req: ExpressRequest,
     ): Promise<OkDTO> {
         await requireCurrentUser(req);
-
-        requireAdult(req.viewer, 'COMMENTS_ADULTS_ONLY');
 
         const parsedBody = deleteCommentSchema.parse(body ?? {});
         const commentId = String(id || '');
@@ -166,10 +161,8 @@ export class CommentsController extends Controller {
         try {
             await softDeleteComment({
                 commentId,
-                requester: {
-                    id: req.currentUser!.id,
-                    role: req.currentUser!.role,
-                },
+                principal: req.user,
+                requesterId: req.currentUser!.id,
                 reason: parsedBody.reason,
             });
 

@@ -1,11 +1,13 @@
-import { UserRole, CommentDeletedKind } from '@prisma/client';
+import { CommentDeletedKind } from '@prisma/client';
+import { Permission } from '../../domain/auth/permissions';
+import type { PrincipalLike } from '../../domain/auth/permission.utils';
+import { hasPermission } from '../../domain/auth/permission.utils';
 
-type Viewer = { role: UserRole } | undefined;
+type Viewer = PrincipalLike | undefined;
 
 export type CommentAuthorDTO = {
     id: string;
     username: string;
-    role: UserRole;
 };
 
 export type CommentDTO = {
@@ -27,8 +29,10 @@ export type CommentDTO = {
 export function toCommentDTO(c: any, viewer: Viewer): CommentDTO {
     const isDeleted = !!c.deletedAt;
 
-    const canSeeReason =
-        viewer?.role === UserRole.MODERATOR || viewer?.role === UserRole.ADMIN;
+    const canSeeReason = hasPermission(
+        viewer,
+        Permission.COMMENTS_READ_DELETION_REASON,
+    );
 
     return {
         id: c.id,
@@ -40,14 +44,13 @@ export function toCommentDTO(c: any, viewer: Viewer): CommentDTO {
         isDeleted,
         deletedKind: c.deletedKind ?? null,
         deletedReason:
-            isDeleted && canSeeReason ? c.deletedReason ?? null : null,
+            isDeleted && canSeeReason ? (c.deletedReason ?? null) : null,
 
         createdAt: new Date(c.createdAt).toISOString(),
 
         user: {
             id: c.user.id,
             username: c.user.username,
-            role: c.user.role,
         },
     };
 }

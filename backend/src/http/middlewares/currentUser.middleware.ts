@@ -1,6 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
 import { prisma } from '../../lib/prisma';
-import { UserRole } from '@prisma/client';
 
 function computeIsAdult(birthDate: Date | null | undefined): boolean {
     if (!birthDate) return false;
@@ -9,7 +8,7 @@ function computeIsAdult(birthDate: Date | null | undefined): boolean {
     const eighteenYearsAgo = new Date(
         now.getFullYear() - 18,
         now.getMonth(),
-        now.getDate()
+        now.getDate(),
     );
 
     return birthDate <= eighteenYearsAgo;
@@ -18,7 +17,7 @@ function computeIsAdult(birthDate: Date | null | undefined): boolean {
 export async function currentUserMiddleware(
     req: Request,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
 ) {
     if (!req.user?.id) {
         return res
@@ -40,7 +39,6 @@ export async function currentUserMiddleware(
 
     req.viewer = {
         id: user.id,
-        role: user.role,
         isAdult: computeIsAdult(user.birthDate),
     };
 

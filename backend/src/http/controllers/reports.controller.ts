@@ -12,15 +12,10 @@ import {
     Tags,
 } from 'tsoa';
 import type { Request as ExpressRequest } from 'express';
-import { RestrictionType, UserRole } from '@prisma/client';
+import { RestrictionType } from '@prisma/client';
 
-import { apiError } from '../errors/ApiError';
 import { requireCurrentUser } from '../tsoa/context';
-import {
-    requireNoActiveRestriction,
-    requireNotBanned,
-    requireRole,
-} from '../tsoa/guards';
+import { requireNoActiveRestriction, requireNotBanned } from '../tsoa/guards';
 
 import {
     adminReportPatchSchema,
@@ -47,15 +42,16 @@ import {
     type AdminReportPatchResponseDTO,
 } from '../dto/reports.dto';
 
+import { Permission, Scope } from '../../domain/auth/permissions';
+
 @Route()
 @Tags('Reports')
 export class ReportsController extends Controller {
     /**
      * POST /reports
-     * auth required + not banned + restriction checks
      */
     @Post('reports')
-    @Security('cookieAuth')
+    @Security('cookieAuth', [Scope.LOAD_PERMISSIONS, Permission.REPORTS_CREATE])
     public async create(
         @Body() body: CreateReportBodyDTO,
         @Request() req: ExpressRequest,
@@ -84,10 +80,12 @@ export class ReportsController extends Controller {
 
     /**
      * GET /admin/reports
-     * Moderator/Admin only
      */
     @Get('admin/reports')
-    @Security('cookieAuth')
+    @Security('cookieAuth', [
+        Scope.LOAD_PERMISSIONS,
+        Permission.REPORTS_ADMIN_READ,
+    ])
     public async adminList(
         @Request() req: ExpressRequest,
         @Query() limit?: number,
@@ -97,7 +95,6 @@ export class ReportsController extends Controller {
         @Query() order?: 'old' | 'new',
     ): Promise<AdminReportsListResponseDTO> {
         await requireCurrentUser(req);
-        requireRole(req.viewer!.role, [UserRole.MODERATOR, UserRole.ADMIN]);
 
         const q = adminReportsListQuerySchema.parse({
             limit,
@@ -123,10 +120,12 @@ export class ReportsController extends Controller {
 
     /**
      * GET /admin/reports/targets
-     * Moderator/Admin only
      */
     @Get('admin/reports/targets')
-    @Security('cookieAuth')
+    @Security('cookieAuth', [
+        Scope.LOAD_PERMISSIONS,
+        Permission.REPORTS_ADMIN_READ,
+    ])
     public async adminTargets(
         @Request() req: ExpressRequest,
         @Query() limit?: number,
@@ -137,7 +136,6 @@ export class ReportsController extends Controller {
         order?: 'count_desc' | 'count_asc' | 'oldest_first' | 'newest_first',
     ): Promise<AdminReportTargetsResponseDTO> {
         await requireCurrentUser(req);
-        requireRole(req.viewer!.role, [UserRole.MODERATOR, UserRole.ADMIN]);
 
         const q = adminReportTargetsQuerySchema.parse({
             limit,
@@ -166,17 +164,18 @@ export class ReportsController extends Controller {
 
     /**
      * PATCH /admin/reports/:id
-     * Moderator/Admin only
      */
     @Patch('admin/reports/{id}')
-    @Security('cookieAuth')
+    @Security('cookieAuth', [
+        Scope.LOAD_PERMISSIONS,
+        Permission.REPORTS_ADMIN_UPDATE,
+    ])
     public async adminPatch(
         @Path() id: string,
         @Body() body: AdminReportPatchBodyDTO,
         @Request() req: ExpressRequest,
     ): Promise<AdminReportPatchResponseDTO> {
         await requireCurrentUser(req);
-        requireRole(req.viewer!.role, [UserRole.MODERATOR, UserRole.ADMIN]);
 
         const data = adminReportPatchSchema.parse(body);
 

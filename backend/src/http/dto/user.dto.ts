@@ -1,17 +1,14 @@
-import { UserRole } from '@prisma/client';
-
 import type {
     MediaPublicDTO,
     MediaUserDTO,
     MediaModeratorDTO,
     MediaVisibleDTO,
 } from './media.dto';
-import { CommentDTO } from './comment.dto';
+import type { CommentDTO } from './comment.dto';
 
 export type UserPublicDTO = {
     id: string;
     username: string;
-    role: UserRole;
 
     avatarUrl: string | null;
     bio: string | null;
@@ -24,7 +21,6 @@ export function toUserPublicDTO(u: any): UserPublicDTO {
     return {
         id: u.id,
         username: u.username,
-        role: u.role,
 
         avatarUrl: u.avatarUrl ?? null,
         bio: u.bio ?? null,
@@ -38,7 +34,6 @@ export type UserSelfDTO = {
     id: string;
     username: string;
     email: string;
-    role: UserRole;
 
     birthDate: string | null;
 
@@ -58,6 +53,9 @@ export type UserSelfDTO = {
     uploadCount: number;
     warningCount: number;
     isBanned: boolean;
+
+    roles?: string[];
+    permissions?: string[];
 };
 
 export function toUserSelfDTO(u: any): UserSelfDTO {
@@ -65,7 +63,6 @@ export function toUserSelfDTO(u: any): UserSelfDTO {
         id: u.id,
         username: u.username,
         email: u.email,
-        role: u.role,
 
         birthDate: u.birthDate ? new Date(u.birthDate).toISOString() : null,
 
@@ -87,6 +84,9 @@ export function toUserSelfDTO(u: any): UserSelfDTO {
         uploadCount: u.uploadCount ?? 0,
         warningCount: u.warningCount ?? 0,
         isBanned: !!u.isBanned,
+
+        roles: Array.isArray(u.roles) ? u.roles : undefined,
+        permissions: Array.isArray(u.permissions) ? u.permissions : undefined,
     };
 }
 

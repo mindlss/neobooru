@@ -22,7 +22,6 @@ const EnvSchema = z.object({
     LOG_DIR: z.string().default('./logs'),
     LOG_TO_FILE: z.enum(['true', 'false']).default('true'),
 
-    // split files
     LOG_APP_FILE_BASENAME: z.string().default('app.log'),
     LOG_ACCESS_FILE_BASENAME: z.string().default('access.log'),
     LOG_ERROR_FILE_BASENAME: z.string().default('error.log'),
@@ -31,6 +30,11 @@ const EnvSchema = z.object({
     LOG_ROTATE_SIZE: LogSizeSchema.default('50M'),
     LOG_MAX_FILES: z.coerce.number().int().positive().default(14),
 
+    // ===== Redis =====
+    REDIS_HOST: z.string().min(1),
+    REDIS_PORT: z.coerce.number().int().positive(),
+
+    // ===== External storage =====
     DATABASE_URL: z.string().min(1),
 
     MINIO_ENDPOINT: z.string().min(1),
@@ -41,12 +45,13 @@ const EnvSchema = z.object({
     MINIO_BUCKET: z.string().min(1),
     MINIO_PRESIGN_EXPIRES: z.coerce.number().int().positive().default(3600),
 
+    MAX_UPLOAD_BYTES: z.coerce.number().int().positive().default(104857600),
+
+    // ===== JWT =====
     JWT_SECRET: z.string().min(32),
     JWT_EXPIRES_IN: z.coerce.number().int().positive().default(900),
     JWT_REFRESH_SECRET: z.string().min(32),
     JWT_REFRESH_EXPIRES_IN: z.coerce.number().int().positive().default(2592000),
-
-    MAX_UPLOAD_BYTES: z.coerce.number().int().positive().default(104857600),
 
     // ===== Avatars =====
     AVATAR_TARGET_SIZE: z.coerce.number().int().positive().default(512),
@@ -56,12 +61,17 @@ const EnvSchema = z.object({
         .positive()
         .default(5 * 1024 * 1024),
 
-    SEED_ADMIN_EMAIL: z.string().default('admin@local'),
-    SEED_ADMIN_USERNAME: z.string().default('admin'),
-    SEED_ADMIN_PASSWORD: z.string().default('admin12345'),
-    SEED_TRUSTED_EMAIL: z.string().default('trusted@local'),
-    SEED_TRUSTED_USERNAME: z.string().default('trusted'),
-    SEED_TRUSTED_PASSWORD: z.string().default('trusted12345'),
+    // ===== SEED =====
+    SEED_DEV_USERS: z.enum(['true', 'false']).default('false'),
+    SEED_ADMIN_EMAIL: z.string().default('admin@local.dev'),
+    SEED_ADMIN_USERNAME: z.string().min(3).default('admin'),
+    SEED_ADMIN_PASSWORD: z.string().min(8).default('admin12345'),
+    SEED_USER_EMAIL: z.string().default('user@local.dev'),
+    SEED_USER_USERNAME: z.string().min(3).default('user'),
+    SEED_USER_PASSWORD: z.string().min(8).default('user12345'),
+    SEED_DELETED_EMAIL: z.string().default('deleted@local.dev'),
+    SEED_DELETED_USERNAME: z.string().min(3).default('deleted'),
+    SEED_DELETED_PASSWORD: z.string().min(8).default('deleted12345'),
 });
 
 const parsed = EnvSchema.safeParse(process.env);
@@ -69,7 +79,7 @@ const parsed = EnvSchema.safeParse(process.env);
 if (!parsed.success) {
     console.error(
         '❌ Invalid environment variables:',
-        parsed.error.flatten().fieldErrors
+        parsed.error.flatten().fieldErrors,
     );
     process.exit(1);
 }

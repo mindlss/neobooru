@@ -1,7 +1,11 @@
-import { UserRole } from '@prisma/client';
 import { toTagPublicDTO, type TagPublicDTO } from './tag.dto';
+import { Permission } from '../../domain/auth/permissions';
 
-type Viewer = { role: UserRole } | undefined;
+type Viewer = { permissions?: string[] } | undefined;
+
+function has(viewer: Viewer, perm: Permission) {
+    return !!viewer?.permissions?.includes(perm);
+}
 
 export type MediaVisibleDTO = MediaPublicDTO | MediaUserDTO | MediaModeratorDTO;
 
@@ -40,6 +44,13 @@ export type MediaUserDTO = MediaPublicDTO & {
     originalUrl: string | null;
 };
 
+/**
+ * Sensitive/staff fields.
+ * Show them only if viewer can actually act as staff for media.
+ *
+ * IMPORTANT: "read explicit" is NOT a moderation entitlement by itself,
+ * so it must NOT unlock mod fields.
+ */
 export type MediaModeratorDTO = MediaUserDTO & {
     hash: string;
 
@@ -54,6 +65,15 @@ export type MediaModeratorDTO = MediaUserDTO & {
     originalKey: string;
     previewKey: string | null;
 };
+
+function canSeeModFields(viewer: Viewer) {
+    // "unmoderated" implies seeing rejected/pending + moderation notes/meta
+    // "deleted" implies seeing deletedAt/deletedBy (and typically keys)
+    return (
+        has(viewer, Permission.MEDIA_READ_UNMODERATED) ||
+        has(viewer, Permission.MEDIA_READ_DELETED)
+    );
+}
 
 export function toMediaDTO(
     media: any,
@@ -70,7 +90,7 @@ export function toMediaDTO(
         duration: media.duration ?? null,
 
         description: media.description ?? null,
-        isExplicit: media.isExplicit,
+        isExplicit: !!media.isExplicit,
         createdAt: new Date(media.createdAt).toISOString(),
 
         previewUrl: media.previewUrl ?? null,
@@ -94,38 +114,39 @@ export function toMediaDTO(
             typeof media.commentCount === 'number' ? media.commentCount : 0,
     };
 
+    // guest
     if (!viewer) return base;
 
+    // authed
     const userDto: MediaUserDTO = {
         ...base,
         originalUrl: media.originalUrl ?? null,
     };
 
-    if (viewer.role === UserRole.MODERATOR || viewer.role === UserRole.ADMIN) {
-        const modDto: MediaModeratorDTO = {
-            ...userDto,
-            hash: media.hash,
+    // staff
+    if (!canSeeModFields(viewer)) return userDto;
 
-            moderationStatus: media.moderationStatus,
-            moderatedAt: media.moderatedAt
-                ? new Date(media.moderatedAt).toISOString()
-                : null,
-            moderatedById: media.moderatedById ?? null,
-            moderationNotes: media.moderationNotes ?? null,
+    const modDto: MediaModeratorDTO = {
+        ...userDto,
+        hash: media.hash,
 
-            deletedAt: media.deletedAt
-                ? new Date(media.deletedAt).toISOString()
-                : null,
-            deletedBy: media.deletedBy ?? null,
+        moderationStatus: media.moderationStatus,
+        moderatedAt: media.moderatedAt
+            ? new Date(media.moderatedAt).toISOString()
+            : null,
+        moderatedById: media.moderatedById ?? null,
+        moderationNotes: media.moderationNotes ?? null,
 
-            originalKey: media.originalKey,
-            previewKey: media.previewKey ?? null,
-        };
+        deletedAt: media.deletedAt
+            ? new Date(media.deletedAt).toISOString()
+            : null,
+        deletedBy: media.deletedBy ?? null,
 
-        return modDto;
-    }
+        originalKey: media.originalKey,
+        previewKey: media.previewKey ?? null,
+    };
 
-    return userDto;
+    return modDto;
 }
 
 export type MediaUploadDTO = {

@@ -1,14 +1,13 @@
+import { RestrictionType } from '@prisma/client';
 import { prisma } from '../../lib/prisma';
 import { apiError } from '../errors/ApiError';
-import type { UserRole, RestrictionType } from '@prisma/client';
 
 /**
  * Throws 403 if viewer is not adult.
- * Use when endpoint is 18+ only.
  */
 export function requireAdult(
     viewer: { isAdult: boolean } | undefined,
-    code = 'ADULTS_ONLY'
+    code = 'ADULTS_ONLY',
 ) {
     if (!viewer?.isAdult) {
         throw apiError(403, code, 'Adults only');
@@ -19,7 +18,7 @@ export function requireAdult(
  * Throws 403 if user is banned.
  */
 export function requireNotBanned(
-    currentUser: { isBanned: boolean } | undefined
+    currentUser: { isBanned: boolean } | undefined,
 ) {
     if (!currentUser) {
         throw apiError(500, 'INTERNAL_SERVER_ERROR', 'currentUser not loaded');
@@ -29,17 +28,58 @@ export function requireNotBanned(
     }
 }
 
+function hasAll(perms: string[], required: string[]) {
+    const set = new Set(perms);
+    return required.every((p) => set.has(p));
+}
+
 /**
- * Throws 403 if role is not in allowed list.
+ * Throws 403 if user is missing required permissions.
+ *
+ * Optimization:
+ * - if principal.permissions already loaded -> check in-memory
+ * - else -> query DB
  */
-export function requireRole(role: UserRole | undefined, allowed: UserRole[]) {
-    if (!role) {
+export async function requirePermissions(
+    principal: { id: string; permissions?: string[] } | undefined,
+    required: string[],
+) {
+    if (!principal) {
         throw apiError(401, 'UNAUTHORIZED', 'Missing auth');
     }
-    if (!allowed.includes(role)) {
-        throw apiError(403, 'FORBIDDEN', 'Insufficient role', {
-            required: allowed,
-            got: role,
+    if (!required.length) return;
+
+    const uniqRequired = Array.from(new Set(required));
+
+    if (Array.isArray(principal.permissions)) {
+        if (!hasAll(principal.permissions, uniqRequired)) {
+            throw apiError(403, 'FORBIDDEN', 'Missing permissions', {
+                required: uniqRequired,
+            });
+        }
+        return;
+    }
+
+    const rows = await prisma.permission.findMany({
+        where: {
+            key: { in: uniqRequired },
+            roles: {
+                some: {
+                    role: {
+                        assignments: {
+                            some: { userId: principal.id },
+                        },
+                    },
+                },
+            },
+        },
+        select: { key: true },
+    });
+
+    if (rows.length !== uniqRequired.length) {
+        throw apiError(403, 'FORBIDDEN', 'Missing permissions', {
+            required: uniqRequired,
+            got: rows.map((r) => r.key),
         });
     }
 }
@@ -51,7 +91,7 @@ export function requireRole(role: UserRole | undefined, allowed: UserRole[]) {
  */
 export async function requireNoActiveRestriction(
     userId: string | undefined,
-    types: RestrictionType[]
+    types: RestrictionType[],
 ) {
     if (!userId) {
         throw apiError(401, 'UNAUTHORIZED', 'Missing auth');

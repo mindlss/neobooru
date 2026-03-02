@@ -1,24 +1,40 @@
 import { prisma } from '../../lib/prisma';
-import type { UserRole, Prisma } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 
-type Viewer = { id?: string; role: UserRole; isAdult: boolean } | undefined;
+import { Permission } from '../auth/permissions';
+import type { PrincipalLike } from '../auth/permission.utils';
+import { hasPermission } from '../auth/permission.utils';
+
+type Viewer = { id?: string; isAdult: boolean } | undefined;
 type Tx = Prisma.TransactionClient;
 
 function normalizeTagName(name: string) {
     return name.trim().toLowerCase().replace(/\s+/g, '_');
 }
 
-function tagVisibilityWhere(viewer: Viewer) {
-    // explicit-теги скрываем всем, кто не 18+
-    if (!viewer?.isAdult) return { isExplicit: false };
+/**
+ * Who can see explicit tags:
+ * - adult viewer
+ * - OR principal has MEDIA_READ_EXPLICIT
+ */
+function canSeeExplicit(principal: PrincipalLike | undefined, viewer: Viewer) {
+    if (viewer?.isAdult) return true;
+    return hasPermission(principal, Permission.MEDIA_READ_EXPLICIT);
+}
+
+function tagVisibilityWhere(
+    principal: PrincipalLike | undefined,
+    viewer: Viewer,
+) {
+    if (!canSeeExplicit(principal, viewer))
+        return { isExplicit: false as const };
     return {};
 }
 
 async function resolveNames(names: string[]) {
     const normalized = Array.from(new Set(names.map(normalizeTagName))).filter(
-        Boolean
+        Boolean,
     );
-
     if (normalized.length === 0) return [];
 
     const aliases = await prisma.tagAlias.findMany({
@@ -37,6 +53,7 @@ async function getOrCreateTags(names: string[]) {
 
     const general = await prisma.tagCategory.findUnique({
         where: { name: 'general' },
+        select: { id: true },
     });
     if (!general) throw new Error('GENERAL_CATEGORY_MISSING');
 
@@ -45,7 +62,6 @@ async function getOrCreateTags(names: string[]) {
     });
 
     const existingMap = new Map(existing.map((t) => [t.name, t]));
-
     const toCreate = resolved.filter((n) => !existingMap.has(n));
 
     if (toCreate.length > 0) {
@@ -53,8 +69,8 @@ async function getOrCreateTags(names: string[]) {
             toCreate.map((name) =>
                 prisma.tag.create({
                     data: { name, categoryId: general.id },
-                })
-            )
+                }),
+            ),
         );
         for (const t of created) existingMap.set(t.name, t);
     }
@@ -74,22 +90,19 @@ async function recomputeMediaExplicit(tx: Tx, mediaId: string) {
     });
 
     const nextIsExplicit = cnt > 0;
-
-    if (before.isExplicit === nextIsExplicit) {
-        return;
-    }
+    if (before.isExplicit === nextIsExplicit) return;
 
     await tx.media.update({
         where: { id: mediaId },
         data: { isExplicit: nextIsExplicit },
     });
 
+    // comics propagation
     const links = await tx.comicPage.findMany({
         where: { mediaId },
         select: { comicId: true },
         distinct: ['comicId'],
     });
-
     if (links.length === 0) return;
 
     if (nextIsExplicit) {
@@ -112,29 +125,67 @@ async function recomputeMediaExplicit(tx: Tx, mediaId: string) {
     }
 }
 
-export async function addTagsToMedia(mediaId: string, tagNames: string[]) {
-    const tags = await getOrCreateTags(tagNames);
+/**
+ * Permission check for mutating media tags.
+ * - staff: MEDIA_TAGS_EDIT_ANY
+ * - owner: MEDIA_TAGS_EDIT_OWN + uploadedById === principal.id
+ */
+async function assertCanEditMediaTags(
+    tx: Tx,
+    principal: PrincipalLike,
+    mediaId: string,
+) {
+    if (hasPermission(principal, Permission.MEDIA_TAGS_EDIT_ANY)) return;
+
+    if (!hasPermission(principal, Permission.MEDIA_TAGS_EDIT_OWN)) {
+        throw new Error('FORBIDDEN');
+    }
+
+    const m = await tx.media.findUnique({
+        where: { id: mediaId },
+        select: { id: true, uploadedById: true, deletedAt: true },
+    });
+
+    if (!m || m.deletedAt) throw new Error('MEDIA_NOT_FOUND');
+    if (m.uploadedById !== principal.id) throw new Error('FORBIDDEN');
+}
+
+// -------------------- media tag mutations --------------------
+
+export async function addTagsToMedia(input: {
+    mediaId: string;
+    tagNames: string[];
+    principal: PrincipalLike;
+}) {
+    const tags = await getOrCreateTags(input.tagNames);
 
     await prisma.$transaction(async (tx) => {
-        await tx.mediaTags.createMany({
-            data: tags.map((t) => ({ mediaId, tagId: t.id })),
-            skipDuplicates: true,
-        });
+        await assertCanEditMediaTags(tx, input.principal, input.mediaId);
 
-        const links = await tx.mediaTags.findMany({
-            where: { mediaId, tagId: { in: tags.map((t) => t.id) } },
-            select: { tagId: true },
-        });
-        const present = new Set(links.map((l) => l.tagId));
-
+        // snapshot BEFORE
         const before = await tx.mediaTags.findMany({
-            where: { mediaId },
+            where: { mediaId: input.mediaId },
             select: { tagId: true },
         });
         const beforeSet = new Set(before.map((l) => l.tagId));
 
+        await tx.mediaTags.createMany({
+            data: tags.map((t) => ({ mediaId: input.mediaId, tagId: t.id })),
+            skipDuplicates: true,
+        });
+
+        // snapshot AFTER
+        const links = await tx.mediaTags.findMany({
+            where: {
+                mediaId: input.mediaId,
+                tagId: { in: tags.map((t) => t.id) },
+            },
+            select: { tagId: true },
+        });
+        const present = new Set(links.map((l) => l.tagId));
+
         const newlyAdded = Array.from(present).filter(
-            (id) => !beforeSet.has(id)
+            (id) => !beforeSet.has(id),
         );
 
         if (newlyAdded.length > 0) {
@@ -144,14 +195,18 @@ export async function addTagsToMedia(mediaId: string, tagNames: string[]) {
             });
         }
 
-        await recomputeMediaExplicit(tx, mediaId);
+        await recomputeMediaExplicit(tx, input.mediaId);
     });
 
     return { ok: true };
 }
 
-export async function removeTagsFromMedia(mediaId: string, tagNames: string[]) {
-    const resolved = await resolveNames(tagNames);
+export async function removeTagsFromMedia(input: {
+    mediaId: string;
+    tagNames: string[];
+    principal: PrincipalLike;
+}) {
+    const resolved = await resolveNames(input.tagNames);
 
     const tags = await prisma.tag.findMany({
         where: { name: { in: resolved } },
@@ -162,8 +217,10 @@ export async function removeTagsFromMedia(mediaId: string, tagNames: string[]) {
     if (tagIds.length === 0) return { ok: true };
 
     await prisma.$transaction(async (tx) => {
+        await assertCanEditMediaTags(tx, input.principal, input.mediaId);
+
         const existingLinks = await tx.mediaTags.findMany({
-            where: { mediaId, tagId: { in: tagIds } },
+            where: { mediaId: input.mediaId, tagId: { in: tagIds } },
             select: { tagId: true },
         });
 
@@ -171,7 +228,7 @@ export async function removeTagsFromMedia(mediaId: string, tagNames: string[]) {
         if (existingIds.length === 0) return;
 
         await tx.mediaTags.deleteMany({
-            where: { mediaId, tagId: { in: existingIds } },
+            where: { mediaId: input.mediaId, tagId: { in: existingIds } },
         });
 
         await tx.tag.updateMany({
@@ -179,19 +236,25 @@ export async function removeTagsFromMedia(mediaId: string, tagNames: string[]) {
             data: { usageCount: { decrement: 1 } },
         });
 
-        await recomputeMediaExplicit(tx, mediaId);
+        await recomputeMediaExplicit(tx, input.mediaId);
     });
 
     return { ok: true };
 }
 
-export async function setTagsForMedia(mediaId: string, tagNames: string[]) {
-    const tags = await getOrCreateTags(tagNames);
+export async function setTagsForMedia(input: {
+    mediaId: string;
+    tagNames: string[];
+    principal: PrincipalLike;
+}) {
+    const tags = await getOrCreateTags(input.tagNames);
     const wantedIds = new Set(tags.map((t) => t.id));
 
     await prisma.$transaction(async (tx) => {
+        await assertCanEditMediaTags(tx, input.principal, input.mediaId);
+
         const current = await tx.mediaTags.findMany({
-            where: { mediaId },
+            where: { mediaId: input.mediaId },
             select: { tagId: true },
         });
 
@@ -199,12 +262,12 @@ export async function setTagsForMedia(mediaId: string, tagNames: string[]) {
 
         const toAdd = Array.from(wantedIds).filter((id) => !currentIds.has(id));
         const toRemove = Array.from(currentIds).filter(
-            (id) => !wantedIds.has(id)
+            (id) => !wantedIds.has(id),
         );
 
         if (toAdd.length > 0) {
             await tx.mediaTags.createMany({
-                data: toAdd.map((tagId) => ({ mediaId, tagId })),
+                data: toAdd.map((tagId) => ({ mediaId: input.mediaId, tagId })),
                 skipDuplicates: true,
             });
 
@@ -216,7 +279,7 @@ export async function setTagsForMedia(mediaId: string, tagNames: string[]) {
 
         if (toRemove.length > 0) {
             await tx.mediaTags.deleteMany({
-                where: { mediaId, tagId: { in: toRemove } },
+                where: { mediaId: input.mediaId, tagId: { in: toRemove } },
             });
 
             await tx.tag.updateMany({
@@ -225,11 +288,13 @@ export async function setTagsForMedia(mediaId: string, tagNames: string[]) {
             });
         }
 
-        await recomputeMediaExplicit(tx, mediaId);
+        await recomputeMediaExplicit(tx, input.mediaId);
     });
 
     return { ok: true };
 }
+
+// -------------------- search / popular --------------------
 
 export type TagSuggestRow =
     | {
@@ -261,15 +326,17 @@ export async function searchTagsAutocomplete(params: {
     q: string;
     limit: number;
     viewer: Viewer;
+    principal?: PrincipalLike;
 }) {
     const query = normalizeTagName(params.q);
     const take = Math.min(Math.max(params.limit, 1), 50);
 
-    // canonical tags
+    const visibility = tagVisibilityWhere(params.principal, params.viewer);
+
     const tags = await prisma.tag.findMany({
         where: {
             name: { startsWith: query },
-            ...tagVisibilityWhere(params.viewer),
+            ...visibility,
         },
         orderBy: [{ usageCount: 'desc' }, { name: 'asc' }],
         take,
@@ -282,21 +349,14 @@ export async function searchTagsAutocomplete(params: {
         },
     });
 
-    // aliases
     const aliases = await prisma.tagAlias.findMany({
         where: {
             alias: { startsWith: query },
-            tag: {
-                ...tagVisibilityWhere(params.viewer),
-            },
+            tag: { ...visibility },
         },
         take: take * 2,
         include: {
-            tag: {
-                include: {
-                    category: true,
-                },
-            },
+            tag: { include: { category: true } },
         },
     });
 
@@ -357,13 +417,14 @@ export async function searchTagsAutocomplete(params: {
 export async function listPopularTags(params: {
     limit: number;
     viewer: Viewer;
+    principal?: PrincipalLike;
 }) {
     const take = Math.min(Math.max(params.limit, 1), 200);
 
+    const visibility = tagVisibilityWhere(params.principal, params.viewer);
+
     const tags = await prisma.tag.findMany({
-        where: {
-            ...tagVisibilityWhere(params.viewer),
-        },
+        where: { ...visibility },
         orderBy: [{ usageCount: 'desc' }, { name: 'asc' }],
         take,
         select: {
@@ -386,9 +447,11 @@ export async function listPopularTags(params: {
     }));
 }
 
+// -------------------- admin/staff tag management --------------------
+
 export async function patchTag(
     tagId: string,
-    input: { customColor?: string | null; isExplicit?: boolean }
+    input: { customColor?: string | null; isExplicit?: boolean },
 ) {
     return prisma.$transaction(async (tx) => {
         const tag = await tx.tag.update({
@@ -418,9 +481,8 @@ export async function patchTag(
             });
 
             const mediaIds = Array.from(
-                new Set(mediaLinks.map((l) => l.mediaId))
+                new Set(mediaLinks.map((l) => l.mediaId)),
             );
-
             for (const mediaId of mediaIds) {
                 await recomputeMediaExplicit(tx, mediaId);
             }
@@ -456,7 +518,6 @@ export async function createTag(input: { name: string; categoryId: string }) {
 
 export async function createAlias(params: { tagId: string; alias: string }) {
     const alias = normalizeTagName(params.alias);
-
     if (!alias) throw new Error('ALIAS_INVALID');
 
     const tag = await prisma.tag.findUnique({
@@ -482,13 +543,11 @@ export async function createAlias(params: { tagId: string; alias: string }) {
 }
 
 export async function listAliasesForTag(tagId: string) {
-    const rows = await prisma.tagAlias.findMany({
+    return prisma.tagAlias.findMany({
         where: { tagId },
         orderBy: { alias: 'asc' },
         select: { id: true, alias: true, tagId: true },
     });
-
-    return rows;
 }
 
 export async function deleteAlias(aliasId: string) {
