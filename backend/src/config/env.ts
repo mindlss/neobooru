@@ -33,6 +33,7 @@ const EnvSchema = z.object({
     // ===== Redis =====
     REDIS_HOST: z.string().min(1),
     REDIS_PORT: z.coerce.number().int().positive(),
+    REDIS_DB: z.coerce.number().int().min(0).max(15).default(0),
 
     // ===== External storage =====
     DATABASE_URL: z.string().min(1),

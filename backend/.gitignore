@@ -1,5 +1,7 @@
 .env
 .env.*
+!.env.example
+!.env.test.example
 
 node_modules/
 docker/data/
@@ -14,3 +16,5 @@ prisma/dev.db
 .DS_Store
 .idea/
 .vscode/
+
+AGENTS.md

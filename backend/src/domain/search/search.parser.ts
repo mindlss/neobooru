@@ -69,7 +69,7 @@ function normalizeTagName(name: string) {
 }
 
 function isWordChar(ch: string) {
-    return /[a-zA-Z0-9_:/.\-]/.test(ch);
+    return /[a-zA-Z0-9_:/.\-<>=]/.test(ch);
 }
 
 function tokenize(q: string): string[] {
@@ -445,13 +445,37 @@ export function parseSearchQuery(q: string): ParseResult {
 
     const rawTokens = tokenize(q);
 
-    // expand -token => NOT token, except special -comic
+    const allowedSorts: SearchSort[] = [
+        'new',
+        'old',
+        'updated',
+        'rating',
+        'rating_count',
+        'random',
+        'last_page',
+    ];
+
+    // expand -token => NOT token, except special -comic.
+    // Directives do not become expression operands, so consume them before
+    // implicit AND insertion to avoid dangling operators.
     const expanded: string[] = [];
     for (const t of rawTokens) {
         const low = t.toLowerCase();
 
+        if (low === 'comic') {
+            st.includeComic = true;
+            continue;
+        }
+
         if (low === '-comic') {
             st.excludeComic = true;
+            continue;
+        }
+
+        if (low.startsWith('sort:')) {
+            const v = low.slice('sort:'.length);
+            if ((allowedSorts as string[]).includes(v)) st.sort = v as SearchSort;
+            else throw new Error('BAD_SORT');
             continue;
         }
 

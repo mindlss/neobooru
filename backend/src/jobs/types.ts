@@ -1,4 +1,4 @@
-export type JobName = 'quota_reset' | 'restriction_expire' | 'comic_rebuild';
+export type JobName = 'comic_rebuild';
 
 export type JobTrigger =
     | { type: 'scheduler' }

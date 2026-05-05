@@ -12,8 +12,6 @@ type JobState = {
 };
 
 const state: Record<JobName, JobState> = {
-    quota_reset: { running: false },
-    restriction_expire: { running: false },
     comic_rebuild: { running: false },
 };
 
@@ -25,6 +23,10 @@ async function runJobInternal(
 ): Promise<JobResult> {
     const job = jobsByName[name];
     const st = state[name];
+
+    if (!job || !st) {
+        return { ok: false, message: `Unknown job: ${name}` };
+    }
 
     if (st.running) {
         return { ok: true, message: 'Already running (skipped)' };

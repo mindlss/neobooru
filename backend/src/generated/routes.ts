@@ -276,7 +276,7 @@ const models: TsoaRoute.Models = {
     // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
     "JobName": {
         "dataType": "refAlias",
-        "type": {"dataType":"union","subSchemas":[{"dataType":"enum","enums":["quota_reset"]},{"dataType":"enum","enums":["restriction_expire"]},{"dataType":"enum","enums":["comic_rebuild"]}],"validators":{}},
+        "type": {"dataType":"enum","enums":["comic_rebuild"],"validators":{}},
     },
     // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
     "JobsListResponseDTO": {

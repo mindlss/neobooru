@@ -12,6 +12,7 @@ import type { Request as ExpressRequest } from 'express';
 
 import { prisma } from '../../lib/prisma';
 import { runJobNow, getJobsStatus } from '../../jobs/runner';
+import { jobs } from '../../jobs';
 import type { JobName } from '../../jobs/types';
 
 import { apiError } from '../errors/ApiError';
@@ -22,11 +23,7 @@ import type { JobsListResponseDTO, RunJobResponseDTO } from '../dto/jobs.dto';
 
 import { Permission, Scope } from '../../domain/auth/permissions';
 
-const allowedJobs: JobName[] = [
-    'quota_reset',
-    'restriction_expire',
-    'comic_rebuild',
-];
+const allowedJobs: JobName[] = jobs.map((job) => job.name);
 
 function isJobName(x: string): x is JobName {
     return (allowedJobs as string[]).includes(x);

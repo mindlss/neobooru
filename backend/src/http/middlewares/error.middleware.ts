@@ -14,6 +14,20 @@ function getRequestId(req: Request) {
     return (req as any).requestId ?? undefined;
 }
 
+function normalizeZodIssues(err: ZodError) {
+    return err.issues.map((issue) => ({
+        path: issue.path,
+        code: issue.code,
+        message: issue.message,
+        ...('expected' in issue ? { expected: issue.expected } : {}),
+        ...('received' in issue ? { received: issue.received } : {}),
+        ...('minimum' in issue ? { minimum: issue.minimum } : {}),
+        ...('maximum' in issue ? { maximum: issue.maximum } : {}),
+        ...('inclusive' in issue ? { inclusive: issue.inclusive } : {}),
+        ...('validation' in issue ? { validation: issue.validation } : {}),
+    }));
+}
+
 function sendError(
     res: Response,
     status: number,
@@ -104,7 +118,7 @@ export function errorMiddleware(
         return sendError(res, 400, {
             code: 'VALIDATION_ERROR',
             message: 'Invalid request',
-            details: { issues: err.issues },
+            details: { issues: normalizeZodIssues(err) },
             requestId,
         });
     }
