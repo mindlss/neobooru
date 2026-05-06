@@ -17,8 +17,31 @@ export type UserPublicDTO = {
     createdAt: string;
 };
 
-export function toUserPublicDTO(u: any): UserPublicDTO {
-    return {
+export type UserAdminDTO = UserPublicDTO & {
+    email: string;
+    birthDate: string | null;
+
+    updatedAt: string;
+    emailVerifiedAt: string | null;
+
+    showComments: boolean;
+    showRatings: boolean;
+    showFavorites: boolean;
+    showUploads: boolean;
+
+    uploadCount: number;
+    warningCount: number;
+    isBanned: boolean;
+
+    deletedAt: string | null;
+    roles: string[];
+    permissions: string[];
+};
+
+export type UserVisibleDTO = UserPublicDTO | UserAdminDTO;
+
+export function toUserPublicDTO(u: any): UserVisibleDTO {
+    const base: UserPublicDTO = {
         id: u.id,
         username: u.username,
 
@@ -27,6 +50,28 @@ export function toUserPublicDTO(u: any): UserPublicDTO {
         website: u.website ?? null,
 
         createdAt: new Date(u.createdAt).toISOString(),
+    };
+
+    if (typeof u.email !== 'string') return base;
+
+    return {
+        ...base,
+        email: u.email,
+        birthDate: u.birthDate ? new Date(u.birthDate).toISOString() : null,
+        updatedAt: new Date(u.updatedAt).toISOString(),
+        emailVerifiedAt: u.emailVerifiedAt
+            ? new Date(u.emailVerifiedAt).toISOString()
+            : null,
+        showComments: !!u.showComments,
+        showRatings: !!u.showRatings,
+        showFavorites: !!u.showFavorites,
+        showUploads: !!u.showUploads,
+        uploadCount: u.uploadCount ?? 0,
+        warningCount: u.warningCount ?? 0,
+        isBanned: !!u.isBanned,
+        deletedAt: u.deletedAt ? new Date(u.deletedAt).toISOString() : null,
+        roles: Array.isArray(u.roles) ? u.roles : [],
+        permissions: Array.isArray(u.permissions) ? u.permissions : [],
     };
 }
 

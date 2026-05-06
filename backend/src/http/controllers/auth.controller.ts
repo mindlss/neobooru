@@ -34,6 +34,7 @@ import type { ErrorEnvelopeDTO } from '../dto/error.dto';
 import type { OkDTO } from '../dto/common.dto';
 import { registerSchema, loginSchema } from '../schemas/auth.schemas';
 import { revokeToken } from '../../domain/auth/tokenBlacklist.service';
+import { prisma } from '../../lib/prisma';
 
 @Route('auth')
 @Tags('Auth')
@@ -107,6 +108,15 @@ export class AuthController extends Controller {
             payload = await verifyRefreshToken(refreshToken);
         } catch {
             throw apiError(401, 'UNAUTHORIZED', 'Invalid refresh token');
+        }
+
+        const user = await prisma.user.findUnique({
+            where: { id: payload.sub },
+            select: { id: true, deletedAt: true },
+        });
+
+        if (!user || user.deletedAt) {
+            throw apiError(401, 'UNAUTHORIZED', 'User not found');
         }
 
         // rotate refresh: revoke old refresh token by jti until exp

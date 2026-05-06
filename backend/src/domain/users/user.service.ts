@@ -1,19 +1,10 @@
 import { prisma } from '../../lib/prisma';
-import { minio } from '../../lib/minio';
-import { env } from '../../config/env';
 import { Permission } from '../auth/permissions';
 import type { Principal } from '../auth/principal';
 import { hasPermission } from '../auth/permission.utils';
+import { presignObject } from '../../utils/storage';
 
 type Viewer = { id?: string; isAdult: boolean } | undefined;
-
-async function presign(key: string) {
-    return minio.presignedGetObject(
-        env.MINIO_BUCKET,
-        key,
-        env.MINIO_PRESIGN_EXPIRES,
-    );
-}
 
 function canSeeAvatar(viewer: Viewer) {
     return !!viewer?.isAdult;
@@ -36,17 +27,42 @@ export async function getUserPublicById(params: {
     principal: Principal;
     viewer: Viewer;
 }) {
+    const canSeeAdminFields =
+        hasPermission(params.principal, Permission.USERS_READ_PRIVATE) ||
+        hasPermission(params.principal, Permission.USERS_READ_DELETED);
+
     const user = await prisma.user.findUnique({
         where: { id: params.userId },
-        select: {
-            id: true,
-            username: true,
-            avatarKey: true,
-            bio: true,
-            website: true,
-            createdAt: true,
-            deletedAt: true,
-        },
+        select: canSeeAdminFields
+            ? {
+                  id: true,
+                  username: true,
+                  email: true,
+                  birthDate: true,
+                  avatarKey: true,
+                  bio: true,
+                  website: true,
+                  createdAt: true,
+                  updatedAt: true,
+                  emailVerifiedAt: true,
+                  showComments: true,
+                  showRatings: true,
+                  showFavorites: true,
+                  showUploads: true,
+                  uploadCount: true,
+                  warningCount: true,
+                  isBanned: true,
+                  deletedAt: true,
+              }
+            : {
+                  id: true,
+                  username: true,
+                  avatarKey: true,
+                  bio: true,
+                  website: true,
+                  createdAt: true,
+                  deletedAt: true,
+              },
     });
 
     if (!user) return null;
@@ -60,10 +76,17 @@ export async function getUserPublicById(params: {
 
     const avatarUrl =
         user.avatarKey && canSeeAvatar(params.viewer)
-            ? await presign(user.avatarKey)
+            ? await presignObject(user.avatarKey)
             : null;
 
-    return { ...user, avatarUrl };
+    if (!canSeeAdminFields) return { ...user, avatarUrl };
+
+    const [roles, permissions] = await Promise.all([
+        getUserRoleKeys(user.id),
+        getUserPermissionKeys(user.id),
+    ]);
+
+    return { ...user, avatarUrl, roles, permissions };
 }
 
 export async function getUserSelf(userId: string) {
@@ -100,7 +123,7 @@ export async function getUserSelf(userId: string) {
 
     const isAdult = computeIsAdult(user.birthDate);
     const avatarUrl =
-        user.avatarKey && isAdult ? await presign(user.avatarKey) : null;
+        user.avatarKey && isAdult ? await presignObject(user.avatarKey) : null;
 
     return { ...user, avatarUrl };
 }
@@ -174,7 +197,9 @@ export async function patchUserSelf(params: {
 
     const isAdult = computeIsAdult(updated.birthDate);
     const avatarUrl =
-        updated.avatarKey && isAdult ? await presign(updated.avatarKey) : null;
+        updated.avatarKey && isAdult
+            ? await presignObject(updated.avatarKey)
+            : null;
 
     return { ...updated, avatarUrl };
 }
@@ -185,4 +210,19 @@ export async function getUserRoleKeys(userId: string): Promise<string[]> {
         select: { role: { select: { key: true } } },
     });
     return rows.map((r) => r.role.key);
+}
+
+export async function getUserPermissionKeys(userId: string): Promise<string[]> {
+    const rows = await prisma.permission.findMany({
+        where: {
+            roles: {
+                some: {
+                    role: { assignments: { some: { userId } } },
+                },
+            },
+        },
+        select: { key: true },
+    });
+
+    return Array.from(new Set(rows.map((r) => r.key)));
 }

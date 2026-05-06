@@ -1,8 +1,6 @@
 import Busboy from 'busboy';
 import { createHash } from 'node:crypto';
 import { createWriteStream, promises as fs } from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 
 import { fileTypeFromFile } from 'file-type';
 
@@ -10,6 +8,13 @@ import { env } from '../../config/env';
 import { prisma } from '../../lib/prisma';
 import { minio } from '../../lib/minio';
 import { buildAvatarKey } from '../../storage/media/keyBuilder';
+import {
+    sha256Buffer,
+    sha256File,
+    tmpFilePath,
+    unlinkQuiet,
+    writeBufferToTemp,
+} from '../../utils/files';
 
 type ParsedAvatarUpload = {
     tmpPath: string;
@@ -60,10 +65,7 @@ export async function parseAvatarMultipartToTemp(
         }
 
         bb.on('file', (_fieldname, file) => {
-            const tmpName = `avatar_${Date.now()}_${Math.random()
-                .toString(16)
-                .slice(2)}.bin`;
-            tmpPath = path.join(os.tmpdir(), tmpName);
+            tmpPath = tmpFilePath('avatar', 'bin');
 
             fileWrite = createWriteStream(tmpPath);
 
@@ -110,7 +112,7 @@ export async function parseAvatarMultipartToTemp(
     });
 }
 
-export async function uploadUserAvatarFromTemp(params: {
+async function persistUserAvatarFromTemp(params: {
     userId: string;
     tmpPath: string;
     sha256: string;
@@ -120,7 +122,7 @@ export async function uploadUserAvatarFromTemp(params: {
     const ext = (ft?.ext ?? '').toLowerCase();
 
     if (!ALLOWED_MIME.has(mime) || !ALLOWED_EXT.has(ext)) {
-        await fs.unlink(params.tmpPath).catch(() => {});
+        await unlinkQuiet(params.tmpPath);
         throw new Error('UNSUPPORTED_AVATAR_TYPE');
     }
 
@@ -141,11 +143,53 @@ export async function uploadUserAvatarFromTemp(params: {
         select: { id: true },
     });
 
-    await fs.unlink(params.tmpPath).catch(() => {});
+    await unlinkQuiet(params.tmpPath);
 
     if (prev?.avatarKey && prev.avatarKey !== key) {
         minio.removeObject(env.MINIO_BUCKET, prev.avatarKey).catch(() => {});
     }
 
     return { avatarKey: key };
+}
+
+export async function uploadUserAvatarFromTemp(params: {
+    userId: string;
+    file: Express.Multer.File;
+}) {
+    const file = params.file;
+    if (!file) throw new Error('NO_FILE');
+
+    if (file.path) {
+        try {
+            const sha256 = await sha256File(file.path);
+            return await persistUserAvatarFromTemp({
+                userId: params.userId,
+                tmpPath: file.path,
+                sha256,
+            });
+        } finally {
+            await unlinkQuiet(file.path);
+        }
+    }
+
+    if (!file.buffer || file.buffer.length === 0) {
+        throw new Error('NO_FILE');
+    }
+
+    if (file.buffer.length > env.AVATAR_MAX_BYTES) {
+        throw new Error('FILE_TOO_LARGE');
+    }
+
+    const tmpPath = await writeBufferToTemp(file.buffer, 'avatar', 'bin');
+    const sha256 = sha256Buffer(file.buffer);
+
+    try {
+        return await persistUserAvatarFromTemp({
+            userId: params.userId,
+            tmpPath,
+            sha256,
+        });
+    } finally {
+        await unlinkQuiet(tmpPath);
+    }
 }

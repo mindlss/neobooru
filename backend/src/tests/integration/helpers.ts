@@ -99,6 +99,25 @@ export async function createApprovedMedia(uploadedById?: string | null) {
     });
 }
 
+export async function createApprovedMediaWithPreview(
+    uploadedById?: string | null,
+) {
+    return prisma.media.create({
+        data: {
+            originalKey: `original/${randomUUID()}.png`,
+            previewKey: `preview/${randomUUID()}.webp`,
+            hash: randomUUID(),
+            contentType: 'image/png',
+            size: 1234,
+            width: 800,
+            height: 600,
+            type: MediaType.IMAGE,
+            moderationStatus: ModerationStatus.APPROVED,
+            uploadedById: uploadedById ?? null,
+        },
+    });
+}
+
 export async function createTag(params: {
     name: string;
     usageCount?: number;

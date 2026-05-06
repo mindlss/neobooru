@@ -472,15 +472,17 @@ model Comment {
 // ==================== RATINGS ====================
 
 model Rating {
-  id      String @id @default(uuid())
-  value   Int
-  mediaId String
-  userId  String
+  id        String   @id @default(uuid())
+  value     Int
+  mediaId   String
+  userId    String
+  createdAt DateTime @default(now())
 
   media Media @relation(fields: [mediaId], references: [id], onDelete: Cascade)
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([mediaId, userId])
+  @@index([userId, createdAt])
 }
 
 // ==================== VIEW HISTORY ====================

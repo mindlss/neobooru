@@ -135,6 +135,97 @@
 				],
 				"type": "object"
 			},
+			"UserAdminDTO": {
+				"allOf": [
+					{
+						"$ref": "#/components/schemas/UserPublicDTO"
+					},
+					{
+						"properties": {
+							"permissions": {
+								"items": {
+									"type": "string"
+								},
+								"type": "array"
+							},
+							"roles": {
+								"items": {
+									"type": "string"
+								},
+								"type": "array"
+							},
+							"deletedAt": {
+								"type": "string",
+								"nullable": true
+							},
+							"isBanned": {
+								"type": "boolean"
+							},
+							"warningCount": {
+								"type": "number",
+								"format": "double"
+							},
+							"uploadCount": {
+								"type": "number",
+								"format": "double"
+							},
+							"showUploads": {
+								"type": "boolean"
+							},
+							"showFavorites": {
+								"type": "boolean"
+							},
+							"showRatings": {
+								"type": "boolean"
+							},
+							"showComments": {
+								"type": "boolean"
+							},
+							"emailVerifiedAt": {
+								"type": "string",
+								"nullable": true
+							},
+							"updatedAt": {
+								"type": "string"
+							},
+							"birthDate": {
+								"type": "string",
+								"nullable": true
+							},
+							"email": {
+								"type": "string"
+							}
+						},
+						"required": [
+							"permissions",
+							"roles",
+							"deletedAt",
+							"isBanned",
+							"warningCount",
+							"uploadCount",
+							"showUploads",
+							"showFavorites",
+							"showRatings",
+							"showComments",
+							"emailVerifiedAt",
+							"updatedAt",
+							"birthDate",
+							"email"
+						],
+						"type": "object"
+					}
+				]
+			},
+			"UserVisibleDTO": {
+				"anyOf": [
+					{
+						"$ref": "#/components/schemas/UserPublicDTO"
+					},
+					{
+						"$ref": "#/components/schemas/UserAdminDTO"
+					}
+				]
+			},
 			"TagPublicDTO": {
 				"properties": {
 					"addedAt": {
@@ -1938,7 +2029,7 @@
 						"content": {
 							"application/json": {
 								"schema": {
-									"$ref": "#/components/schemas/UserPublicDTO"
+									"$ref": "#/components/schemas/UserVisibleDTO"
 								}
 							}
 						}

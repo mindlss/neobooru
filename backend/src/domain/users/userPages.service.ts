@@ -1,7 +1,7 @@
 import { prisma } from '../../lib/prisma';
 import { minio } from '../../lib/minio';
 import { env } from '../../config/env';
-import { ModerationStatus } from '@prisma/client';
+import { ModerationStatus, Prisma } from '@prisma/client';
 import { Permission } from '../auth/permissions';
 import type { Principal } from '../auth/principal';
 import { hasPermission } from '../auth/permission.utils';
@@ -376,37 +376,73 @@ export async function listUserRatings(params: {
         principal: params.principal,
     });
 
-    const orderBy =
-        params.sort === 'old'
-            ? [{ createdAt: 'asc' as const }, { id: 'asc' as const }]
-            : [{ createdAt: 'desc' as const }, { id: 'desc' as const }];
+    const mediaSqlConditions: Prisma.Sql[] = [];
+    if (mediaVisibility.deletedAt === null) {
+        mediaSqlConditions.push(Prisma.sql`m."deletedAt" IS NULL`);
+    }
+    if (mediaVisibility.moderationStatus) {
+        mediaSqlConditions.push(
+            Prisma.sql`m."moderationStatus"::text = ${mediaVisibility.moderationStatus}`,
+        );
+    }
+    if (mediaVisibility.isExplicit === false) {
+        mediaSqlConditions.push(Prisma.sql`m."isExplicit" = false`);
+    }
+    if (params.type) {
+        mediaSqlConditions.push(Prisma.sql`m."type"::text = ${params.type}`);
+    }
+    if (params.cursor) {
+        mediaSqlConditions.push(
+            params.sort === 'old'
+                ? Prisma.sql`(r."createdAt", r."id") > (
+                    SELECT "createdAt", "id" FROM "Rating" WHERE "id" = ${params.cursor}
+                )`
+                : Prisma.sql`(r."createdAt", r."id") < (
+                    SELECT "createdAt", "id" FROM "Rating" WHERE "id" = ${params.cursor}
+                )`,
+        );
+    }
 
-    const rows = await prisma.rating.findMany({
-        where: {
-            userId: params.userId,
-            media: {
-                ...mediaVisibility,
-                ...(params.type ? { type: params.type } : {}),
-            } as any,
-        },
-        orderBy: orderBy as any,
-        take: take + 1,
-        ...(params.cursor ? { cursor: { id: params.cursor }, skip: 1 } : {}),
-        include: {
-            media: {
-                include: {
-                    tagLinks: {
-                        include: { tag: { include: { category: true } } },
-                        orderBy: { addedAt: 'asc' },
-                    },
-                },
-            },
-        },
-    });
+    const visibilitySql = mediaSqlConditions.length
+        ? Prisma.sql`AND ${Prisma.join(mediaSqlConditions, ' AND ')}`
+        : Prisma.empty;
 
-    const nextCursor = rows.length > take ? rows[take].id : null;
+    const orderedIds = await prisma.$queryRaw<{ id: string }[]>`
+        SELECT r."id"
+        FROM "Rating" r
+        INNER JOIN "Media" m ON m."id" = r."mediaId"
+        WHERE r."userId" = ${params.userId}
+        ${visibilitySql}
+        ORDER BY r."createdAt" ${params.sort === 'old' ? Prisma.sql`ASC` : Prisma.sql`DESC`},
+                 r."id" ${params.sort === 'old' ? Prisma.sql`ASC` : Prisma.sql`DESC`}
+        LIMIT ${take + 1}
+    `;
 
-    const mapped = rows.slice(0, take).map((r: any) => ({
+    const pageIds = orderedIds.slice(0, take).map((r) => r.id);
+    const rows = pageIds.length
+        ? await prisma.rating.findMany({
+              where: { id: { in: pageIds } },
+              include: {
+                  media: {
+                      include: {
+                          tagLinks: {
+                              include: { tag: { include: { category: true } } },
+                              orderBy: { addedAt: 'asc' },
+                          },
+                      },
+                  },
+              },
+          })
+        : [];
+
+    const byId = new Map(rows.map((r) => [r.id, r]));
+    const orderedRows = pageIds
+        .map((id) => byId.get(id))
+        .filter((r): r is NonNullable<typeof r> => !!r);
+
+    const nextCursor = orderedIds.length > take ? orderedIds[take].id : null;
+
+    const mapped = orderedRows.map((r: any) => ({
         value: r.value,
         media: mapMedia(r.media, params.viewer),
     }));

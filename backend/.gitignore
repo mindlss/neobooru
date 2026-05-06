@@ -18,3 +18,5 @@ prisma/dev.db
 .vscode/
 
 AGENTS.md
+.agents
+.codex

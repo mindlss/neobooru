@@ -16,6 +16,17 @@ vi.mock('../lib/redis', () => ({
             revokedTokens.set(key, value);
             return 'OK';
         },
+        async incr(key: string) {
+            const next = Number(revokedTokens.get(key) ?? '0') + 1;
+            revokedTokens.set(key, String(next));
+            return next;
+        },
+        async expire() {
+            return 1;
+        },
+        async ttl() {
+            return 60;
+        },
         async del(key: string) {
             return revokedTokens.delete(key) ? 1 : 0;
         },
@@ -25,6 +36,18 @@ vi.mock('../lib/redis', () => ({
         },
         disconnect() {},
         quit: async () => 'OK',
+    },
+}));
+
+vi.mock('../lib/minio', () => ({
+    minio: {
+        async fPutObject() {
+            return { etag: 'test-etag' };
+        },
+        async presignedGetObject(_bucket: string, key: string) {
+            return `http://minio.test/${key}`;
+        },
+        async removeObject() {},
     },
 }));
 

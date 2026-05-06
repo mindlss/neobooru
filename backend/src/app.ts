@@ -10,6 +10,11 @@ import { env } from './config/env';
 import { requestIdMiddleware } from './http/middlewares/requestId.middleware';
 import { notFoundMiddleware } from './http/middlewares/notFound.middleware';
 import { errorMiddleware } from './http/middlewares/error.middleware';
+import {
+    authRateLimit,
+    commentsRateLimit,
+    uploadRateLimit,
+} from './http/middlewares/rateLimit.middleware';
 
 import { RegisterRoutes } from './generated/routes';
 import swaggerSpec from './generated/swagger.json';
@@ -71,6 +76,13 @@ export function createApp() {
     app.use(express.urlencoded({ extended: true }));
 
     app.use(cookieParser());
+
+    app.post('/auth/register', authRateLimit);
+    app.post('/auth/login', authRateLimit);
+    app.post('/auth/refresh', authRateLimit);
+    app.post('/media/upload', uploadRateLimit);
+    app.post('/users/me/avatar', uploadRateLimit);
+    app.post('/media/:id/comments', commentsRateLimit);
 
     RegisterRoutes(app);
 

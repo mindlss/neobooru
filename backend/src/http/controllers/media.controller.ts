@@ -36,6 +36,7 @@ import {
     type MediaVisibleDTO,
     type MediaListResponseDTO,
 } from '../dto/media.dto';
+import { dtoViewerFromReq, principalFromReq } from '../utils/principal';
 
 import { requireNotBanned, requireNoActiveRestriction } from '../tsoa/guards';
 
@@ -54,11 +55,13 @@ export class MediaController extends Controller {
         @Path() id: string,
         @Request() req: ExpressRequest,
     ): Promise<MediaVisibleDTO> {
-        const result = await getMediaByIdOrBlocked(id, req.user);
+        const result = await getMediaByIdOrBlocked(id, principalFromReq(req));
 
         if (result.kind === 'ok') {
-            // Передаём principal как viewer-like.
-            return toMediaDTO(result.media!, req.user) as MediaVisibleDTO;
+            return toMediaDTO(
+                result.media!,
+                dtoViewerFromReq(req),
+            ) as MediaVisibleDTO;
         }
 
         switch (result.reason) {
@@ -99,7 +102,7 @@ export class MediaController extends Controller {
         const q = mediaListQuerySchema.parse({ limit, cursor, sort, type });
 
         const result = await listMediaVisible({
-            principal: req.user,
+            principal: principalFromReq(req),
             limit: q.limit,
             cursor: q.cursor,
             sort: q.sort,
@@ -108,7 +111,7 @@ export class MediaController extends Controller {
 
         return {
             data: result.data.map((m) =>
-                toMediaDTO(m, req.user),
+                toMediaDTO(m, dtoViewerFromReq(req)),
             ) as MediaVisibleDTO[],
             nextCursor: result.nextCursor,
         };

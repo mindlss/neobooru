@@ -48,6 +48,30 @@ const EnvSchema = z.object({
     REDIS_PORT: z.coerce.number().int().positive(),
     REDIS_DB: z.coerce.number().int().min(0).max(15).default(0),
 
+    // ===== Rate limiting =====
+    RATE_LIMIT_ENABLED: z
+        .enum(['true', 'false'])
+        .default('true')
+        .transform((v) => v === 'true'),
+    RATE_LIMIT_AUTH_WINDOW_SECONDS: z.coerce
+        .number()
+        .int()
+        .positive()
+        .default(60),
+    RATE_LIMIT_AUTH_MAX: z.coerce.number().int().positive().default(20),
+    RATE_LIMIT_UPLOAD_WINDOW_SECONDS: z.coerce
+        .number()
+        .int()
+        .positive()
+        .default(300),
+    RATE_LIMIT_UPLOAD_MAX: z.coerce.number().int().positive().default(20),
+    RATE_LIMIT_COMMENTS_WINDOW_SECONDS: z.coerce
+        .number()
+        .int()
+        .positive()
+        .default(60),
+    RATE_LIMIT_COMMENTS_MAX: z.coerce.number().int().positive().default(30),
+
     // ===== External storage =====
     DATABASE_URL: z.string().min(1),
 

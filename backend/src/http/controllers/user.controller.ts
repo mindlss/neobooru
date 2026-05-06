@@ -13,9 +13,6 @@ import {
     UploadedFile,
 } from 'tsoa';
 import type { Request as ExpressRequest } from 'express';
-import { createHash } from 'node:crypto';
-import { createReadStream } from 'node:fs';
-import { promises as fs } from 'node:fs';
 
 import { apiError } from '../errors/ApiError';
 import { requireCurrentUser } from '../tsoa/context';
@@ -27,11 +24,9 @@ import {
 } from '../schemas/user.schemas';
 import { mediaListQuerySchema } from '../schemas/media.schemas';
 
-import { prisma } from '../../lib/prisma';
 import { Permission, Scope } from '../../domain/auth/permissions';
 
 import {
-    computeIsAdult,
     getUserPublicById,
     getUserSelf,
     patchUserSelf,
@@ -50,52 +45,20 @@ import { uploadUserAvatarFromTemp } from '../../domain/users/avatar.service';
 import { toUserPublicDTO, toUserSelfDTO } from '../dto/user.dto';
 import { type MediaVisibleDTO, toMediaDTO } from '../dto/media.dto';
 import { toCommentDTO } from '../dto/comment.dto';
+import {
+    dtoViewerFromReq,
+    loadViewerFromReq,
+    principalFromReq,
+} from '../utils/principal';
 
 import type {
-    UserPublicDTO,
+    UserVisibleDTO,
     UserSelfDTO,
     UserMediaListResponseDTO,
     UserCommentsListResponseDTO,
     UserRatingsListResponseDTO,
     UserRatingItemDTO,
 } from '../dto/user.dto';
-
-async function sha256File(filepath: string): Promise<string> {
-    return new Promise((resolve, reject) => {
-        const hash = createHash('sha256');
-        const s = createReadStream(filepath);
-        s.on('error', reject);
-        s.on('data', (chunk) => hash.update(chunk));
-        s.on('end', () => resolve(hash.digest('hex')));
-    });
-}
-
-async function loadViewer(
-    req: ExpressRequest,
-): Promise<{ id?: string; isAdult: boolean } | undefined> {
-    if (!req.user?.id) return undefined;
-
-    const u = await prisma.user.findUnique({
-        where: { id: req.user.id },
-        select: { id: true, birthDate: true, deletedAt: true },
-    });
-
-    if (!u || u.deletedAt) return undefined;
-
-    return { id: u.id, isAdult: computeIsAdult(u.birthDate) };
-}
-
-function dtoViewerFromReq(
-    req: ExpressRequest,
-): { permissions?: string[] } | undefined {
-    if (!req.user) return undefined;
-    return { permissions: req.user.permissions ?? [] };
-}
-
-function principalFromReq(req: ExpressRequest) {
-    if (!req.user?.id) return undefined;
-    return { id: req.user.id, permissions: req.user.permissions ?? [] };
-}
 
 @Route('users')
 @Tags('Users')
@@ -131,9 +94,9 @@ export class UsersController extends Controller {
     public async getUserPublic(
         @Path() id: string,
         @Request() req: ExpressRequest,
-    ): Promise<UserPublicDTO> {
+    ): Promise<UserVisibleDTO> {
         const params = userIdParamsSchema.parse({ id });
-        const viewer = await loadViewer(req);
+        const viewer = await loadViewerFromReq(req);
 
         const user = await getUserPublicById({
             userId: params.id,
@@ -161,7 +124,7 @@ export class UsersController extends Controller {
         const params = userIdParamsSchema.parse({ id });
         const q = mediaListQuerySchema.parse({ limit, cursor, sort, type });
 
-        const viewer = await loadViewer(req);
+        const viewer = await loadViewerFromReq(req);
 
         const result = await listUserUploads({
             userId: params.id,
@@ -204,7 +167,7 @@ export class UsersController extends Controller {
         const params = userIdParamsSchema.parse({ id });
         const q = mediaListQuerySchema.parse({ limit, cursor, sort, type });
 
-        const viewer = await loadViewer(req);
+        const viewer = await loadViewerFromReq(req);
 
         const result = await listUserFavorites({
             userId: params.id,
@@ -248,7 +211,7 @@ export class UsersController extends Controller {
             .pick({ limit: true, cursor: true, sort: true })
             .parse({ limit, cursor, sort });
 
-        const viewer = await loadViewer(req);
+        const viewer = await loadViewerFromReq(req);
 
         const result = await listUserComments({
             userId: params.id,
@@ -288,7 +251,7 @@ export class UsersController extends Controller {
         const params = userIdParamsSchema.parse({ id });
         const q = mediaListQuerySchema.parse({ limit, cursor, sort, type });
 
-        const viewer = await loadViewer(req);
+        const viewer = await loadViewerFromReq(req);
 
         const result = await listUserRatings({
             userId: params.id,
@@ -359,27 +322,15 @@ export class UsersController extends Controller {
         await requireCurrentUser(req);
         requireNotBanned(req.currentUser);
 
-        if (!avatar?.path)
+        if (!avatar)
             throw apiError(400, 'NO_FILE', 'avatar file is required');
-
-        const tmpPath = avatar.path;
-
-        let sha256: string;
-        try {
-            sha256 = await sha256File(tmpPath);
-        } catch {
-            await fs.unlink(tmpPath).catch(() => {});
-            throw apiError(400, 'BAD_MULTIPART', 'invalid multipart upload');
-        }
 
         try {
             await uploadUserAvatarFromTemp({
                 userId: req.user!.id,
-                tmpPath,
-                sha256,
+                file: avatar,
             });
         } catch (e: any) {
-            await fs.unlink(tmpPath).catch(() => {});
             if (e?.message === 'UNSUPPORTED_AVATAR_TYPE') {
                 throw apiError(
                     415,

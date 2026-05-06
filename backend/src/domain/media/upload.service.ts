@@ -1,19 +1,27 @@
+/* eslint-disable no-useless-assignment */
 import { createHash } from 'node:crypto';
-import { createReadStream, createWriteStream, promises as fs } from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
+import { createWriteStream, promises as fs } from 'node:fs';
 
 import Busboy from 'busboy';
 
 import { env } from '../../config/env';
 import { prisma } from '../../lib/prisma';
 import { minio } from '../../lib/minio';
-import { buildOriginalKey } from '../../storage/media/keyBuilder';
+import { buildOriginalKey, buildPreviewKey } from '../../storage/media/keyBuilder';
+import {
+  sha256File,
+  sha256Buffer,
+  tmpFilePath,
+  unlinkQuiet,
+  writeBufferToTemp,
+} from '../../utils/files';
+import { removeObjectsQuiet } from '../../utils/storage';
 
 import {
   extractMetadataFromTempFile,
   UnsupportedMediaTypeError,
 } from './metadata.service';
+import { generateMediaPreview } from './preview.service';
 
 import { parseTags } from '../tags/tags.parser';
 import { deriveAutoTags } from '../tags/tags.auto';
@@ -31,28 +39,6 @@ type ParsedUpload = {
 };
 
 // -------------------- helpers --------------------
-
-async function sha256File(filePath: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const hash = createHash('sha256');
-    const rs = createReadStream(filePath);
-    rs.on('data', (chunk) => hash.update(chunk));
-    rs.on('error', reject);
-    rs.on('end', () => resolve(hash.digest('hex')));
-  });
-}
-
-function tmpFilePath(ext?: string) {
-  const suffix = ext ? `.${ext.replace(/^\./, '')}` : '.bin';
-  const name = `upload_${Date.now()}_${Math.random().toString(16).slice(2)}${suffix}`;
-  return path.join(os.tmpdir(), name);
-}
-
-async function writeBufferToTemp(buf: Buffer) {
-  const p = tmpFilePath('bin');
-  await fs.writeFile(p, buf);
-  return p;
-}
 
 function normalizeMergedTags(tags: string[]) {
   const seen = new Set<string>();
@@ -88,15 +74,19 @@ export async function uploadMediaFromMulterFile(input: {
   if (f.path) {
     const sha256 = await sha256File(f.path);
 
-    return uploadMediaFromTemp({
-      tmpPath: f.path,
-      sha256,
-      size: typeof f.size === 'number' ? f.size : (await fs.stat(f.path)).size,
-      mimeType: f.mimetype || 'application/octet-stream',
-      uploadedById: input.uploadedById,
-      description: input.description,
-      tagsRaw: input.tagsRaw,
-    });
+    try {
+      return await uploadMediaFromTemp({
+        tmpPath: f.path,
+        sha256,
+        size: typeof f.size === 'number' ? f.size : (await fs.stat(f.path)).size,
+        mimeType: f.mimetype || 'application/octet-stream',
+        uploadedById: input.uploadedById,
+        description: input.description,
+        tagsRaw: input.tagsRaw,
+      });
+    } finally {
+      await unlinkQuiet(f.path);
+    }
   }
 
   // memory storage (tsoa default)
@@ -104,8 +94,8 @@ export async function uploadMediaFromMulterFile(input: {
     throw new Error('NO_FILE');
   }
 
-  const sha256 = createHash('sha256').update(f.buffer).digest('hex');
-  const tmpPath = await writeBufferToTemp(f.buffer);
+  const sha256 = sha256Buffer(f.buffer);
+  const tmpPath = await writeBufferToTemp(f.buffer, 'upload', 'bin');
 
   try {
     return await uploadMediaFromTemp({
@@ -118,7 +108,7 @@ export async function uploadMediaFromMulterFile(input: {
       tagsRaw: input.tagsRaw,
     });
   } finally {
-    await fs.unlink(tmpPath).catch(() => {});
+    await unlinkQuiet(tmpPath);
   }
 }
 
@@ -182,7 +172,7 @@ export async function parseMultipartToTemp(req: any): Promise<ParsedUpload> {
       filename = info.filename || undefined;
       mimeType = info.mimeType || 'application/octet-stream';
 
-      tmpPath = tmpFilePath('bin');
+      tmpPath = tmpFilePath('upload', 'bin');
       fileWrite = createWriteStream(tmpPath);
 
       file.on('data', (chunk: Buffer) => {
@@ -237,6 +227,10 @@ export async function uploadMediaFromTemp(input: {
   description?: string;
   tagsRaw?: string;
 }) {
+  let originalKey: string | null = null;
+  let previewKey: string | null = null;
+  let previewTmpPath: string | null = null;
+
   // 1) Blocked hash?
   const blocked = await prisma.blockedHash.findUnique({
     where: { hash: input.sha256 },
@@ -272,55 +266,91 @@ export async function uploadMediaFromTemp(input: {
   }
 
   // 4) Build storage key from REAL ext
-  const originalKey = buildOriginalKey(input.sha256, meta.ext || undefined);
-
-  // 5) Upload to MinIO (real content-type)
-  await minio.fPutObject(env.MINIO_BUCKET, originalKey, input.tmpPath, {
-    'Content-Type': meta.contentType,
+  originalKey = buildOriginalKey(input.sha256, meta.ext || undefined);
+  const preview = await generateMediaPreview({
+    tmpPath: input.tmpPath,
+    meta,
   });
+  previewTmpPath = preview.tmpPath;
+  previewKey = buildPreviewKey(input.sha256, preview.ext);
 
-  // 6) Create DB record
-  const desc =
-    typeof input.description === 'string' && input.description.trim().length > 0
-      ? input.description.trim().slice(0, 5000)
-      : null;
-
-  const userTags = parseTags(input.tagsRaw);
-  const autoTags = deriveAutoTags(meta);
-
-  const merged = normalizeMergedTags([...userTags, ...autoTags]);
-
-  const media = await prisma.media.create({
-    data: {
-      originalKey,
-      previewKey: null,
-      hash: input.sha256,
-      contentType: meta.contentType,
-      size: input.size,
-
-      width: meta.width,
-      height: meta.height,
-      duration: meta.duration,
-
-      description: desc,
-      type: meta.mediaType,
-
-      uploadedById: input.uploadedById,
-      // moderationStatus default = PENDING
-    },
-  });
-
-  // 7) Apply tags (system principal)
-  if (merged.length > 0) {
-    await setTagsForMedia({
-      mediaId: media.id,
-      tagNames: merged,
-      principal: SYSTEM_PRINCIPAL,
+  try {
+    // 5) Upload to MinIO (real content-types)
+    await minio.fPutObject(env.MINIO_BUCKET, originalKey, input.tmpPath, {
+      'Content-Type': meta.contentType,
     });
+    await minio.fPutObject(env.MINIO_BUCKET, previewKey, preview.tmpPath, {
+      'Content-Type': preview.contentType,
+    });
+
+    // 6) Create DB record
+    const desc =
+      typeof input.description === 'string' && input.description.trim().length > 0
+        ? input.description.trim().slice(0, 5000)
+        : null;
+
+    const userTags = parseTags(input.tagsRaw);
+    const autoTags = deriveAutoTags(meta);
+
+    const merged = normalizeMergedTags([...userTags, ...autoTags]);
+
+    const media = await prisma.$transaction(async (tx) => {
+      const created = await tx.media.create({
+        data: {
+          originalKey,
+          previewKey,
+          hash: input.sha256,
+          contentType: meta.contentType,
+          size: input.size,
+
+          width: meta.width,
+          height: meta.height,
+          duration: meta.duration,
+
+          description: desc,
+          type: meta.mediaType,
+
+          uploadedById: input.uploadedById,
+          // moderationStatus default = PENDING
+        },
+      });
+
+      await tx.user.update({
+        where: { id: input.uploadedById },
+        data: { uploadCount: { increment: 1 } },
+        select: { id: true },
+      });
+
+      return created;
+    });
+
+    // 7) Apply tags (system principal)
+    if (merged.length > 0) {
+      try {
+        await setTagsForMedia({
+          mediaId: media.id,
+          tagNames: merged,
+          principal: SYSTEM_PRINCIPAL,
+        });
+      } catch (e) {
+        await prisma.$transaction([
+          prisma.media.delete({ where: { id: media.id } }),
+          prisma.user.update({
+            where: { id: input.uploadedById },
+            data: { uploadCount: { decrement: 1 } },
+          }),
+        ]).catch(() => {});
+        throw e;
+      }
+    }
+
+    return media;
+  } catch (e) {
+    await removeObjectsQuiet([originalKey, previewKey]);
+    throw e;
+  } finally {
+    // 8) Cleanup temp files
+    await unlinkQuiet(previewTmpPath);
+    await unlinkQuiet(input.tmpPath);
   }
-
-  // 8) Cleanup temp file
-  await fs.unlink(input.tmpPath).catch(() => {});
-
-  return media;
 }
