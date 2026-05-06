@@ -50,7 +50,9 @@ export async function parseAvatarMultipartToTemp(
             if (fileWrite) {
                 try {
                     fileWrite.close();
-                } catch {}
+                } catch {
+                    // Best-effort cleanup.
+                }
             }
 
             if (p) fs.unlink(p).catch(() => {});

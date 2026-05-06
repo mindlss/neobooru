@@ -14,6 +14,26 @@ import { errorMiddleware } from './http/middlewares/error.middleware';
 import { RegisterRoutes } from './generated/routes';
 import swaggerSpec from './generated/swagger.json';
 
+function isHealthcheckUrl(url?: string) {
+    return url === '/health' || url === '/healthz';
+}
+
+function buildHttpLogObject(req: any, res: any, responseTime?: number) {
+    return {
+        requestId: req.requestId,
+        method: req.method,
+        url: req.url,
+        statusCode: res.statusCode,
+        ...(typeof responseTime === 'number' ? { responseTime } : {}),
+        ...(req.user?.id ? { userId: req.user.id } : {}),
+        ...(req.user?.role ? { userRole: req.user.role } : {}),
+        ...(req.socket?.remoteAddress
+            ? { remoteAddress: req.socket.remoteAddress }
+            : {}),
+        ...(env.LOG_HTTP_HEADERS === 'true' ? { headers: req.headers } : {}),
+    };
+}
+
 export function createApp() {
     const app = express();
 
@@ -29,29 +49,20 @@ export function createApp() {
                 if (res.statusCode >= 400) return 'warn';
                 return 'info';
             },
-            customProps: (req) => ({
-                requestId: (req as any).requestId,
-                userId: (req as any).user?.id,
-                userRole: (req as any).user?.role,
-                remoteAddress: req.socket?.remoteAddress,
+            customSuccessMessage: (req, res) =>
+                `${req.method} ${req.url} completed with ${res.statusCode}`,
+            customErrorMessage: (req, res) =>
+                `${req.method} ${req.url} failed with ${res.statusCode}`,
+            customSuccessObject: (req, res, val) =>
+                buildHttpLogObject(req, res, val.responseTime),
+            customErrorObject: (req, res, err, val) => ({
+                ...buildHttpLogObject(req, res, val.responseTime),
+                err,
             }),
             autoLogging: {
                 ignore: (req) =>
-                    req.url === '/health' || req.url === '/healthz',
-            },
-            serializers: {
-                req(req) {
-                    return {
-                        method: req.method,
-                        url: req.url,
-                        headers: req.headers,
-                    };
-                },
-                res(res) {
-                    return {
-                        statusCode: res.statusCode,
-                    };
-                },
+                    env.LOG_HEALTHCHECKS === 'false' &&
+                    isHealthcheckUrl(req.url),
             },
         }),
     );

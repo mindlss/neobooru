@@ -3,6 +3,10 @@ import { z } from 'zod';
 
 const LogIntervalSchema = z.string().regex(/^\d+(d|h|m|s|M)$/);
 const LogSizeSchema = z.string().regex(/^\d+(B|K|M|G)$/);
+const currentNodeEnv = process.env.NODE_ENV ?? 'development';
+const defaultConsoleLogFormat =
+    currentNodeEnv === 'development' ? 'pretty' : 'json';
+const defaultPrettyColor = currentNodeEnv === 'development' ? 'true' : 'false';
 
 const EnvSchema = z.object({
     NODE_ENV: z
@@ -21,6 +25,15 @@ const EnvSchema = z.object({
     // ===== Logging =====
     LOG_DIR: z.string().default('./logs'),
     LOG_TO_FILE: z.enum(['true', 'false']).default('true'),
+    LOG_CONSOLE_FORMAT: z
+        .enum(['pretty', 'json'])
+        .default(defaultConsoleLogFormat),
+    LOG_FILE_FORMAT: z.enum(['json', 'pretty']).default('json'),
+    LOG_PRETTY_COLOR: z
+        .enum(['true', 'false'])
+        .default(defaultPrettyColor),
+    LOG_HTTP_HEADERS: z.enum(['true', 'false']).default('false'),
+    LOG_HEALTHCHECKS: z.enum(['true', 'false']).default('false'),
 
     LOG_APP_FILE_BASENAME: z.string().default('app.log'),
     LOG_ACCESS_FILE_BASENAME: z.string().default('access.log'),

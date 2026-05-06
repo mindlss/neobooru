@@ -157,7 +157,9 @@ export async function parseMultipartToTemp(req: any): Promise<ParsedUpload> {
       if (fileWrite) {
         try {
           fileWrite.close();
-        } catch {}
+        } catch {
+          // Best-effort cleanup.
+        }
       }
 
       if (p) fs.unlink(p).catch(() => {});
