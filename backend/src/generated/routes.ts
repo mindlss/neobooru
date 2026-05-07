@@ -683,7 +683,7 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
             }
         });
         // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
-        const argsTagsController_search: Record<string, TsoaRoute.ParameterSchema> = {
+        const argsTagsController_searchTags: Record<string, TsoaRoute.ParameterSchema> = {
                 req: {"in":"request","name":"req","required":true,"dataType":"object"},
                 q: {"in":"query","name":"q","required":true,"dataType":"string"},
                 limit: {"in":"query","name":"limit","dataType":"double"},
@@ -691,20 +691,20 @@ export function RegisterRoutes(app: Router,opts?:{multer?:ReturnType<typeof mult
         app.get('/tags/search',
             authenticateMiddleware([{"optionalCookieAuth":["auth.load_permissions"]}]),
             ...(fetchMiddlewares<RequestHandler>(TagsController)),
-            ...(fetchMiddlewares<RequestHandler>(TagsController.prototype.search)),
+            ...(fetchMiddlewares<RequestHandler>(TagsController.prototype.searchTags)),
 
-            async function TagsController_search(request: ExRequest, response: ExResponse, next: any) {
+            async function TagsController_searchTags(request: ExRequest, response: ExResponse, next: any) {
 
             // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 
             let validatedArgs: any[] = [];
             try {
-                validatedArgs = templateService.getValidatedArgs({ args: argsTagsController_search, request, response });
+                validatedArgs = templateService.getValidatedArgs({ args: argsTagsController_searchTags, request, response });
 
                 const controller = new TagsController();
 
               await templateService.apiHandler({
-                methodName: 'search',
+                methodName: 'searchTags',
                 controller,
                 response,
                 next,

@@ -90,7 +90,7 @@ export class TagsController extends Controller {
      */
     @Get('tags/search')
     @Security('optionalCookieAuth', [Scope.LOAD_PERMISSIONS])
-    public async search(
+    public async searchTags(
         @Request() req: ExpressRequest,
         @Query('q') q: string,
         @Query('limit') limit?: number,

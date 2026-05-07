@@ -2411,7 +2411,7 @@
 		},
 		"/tags/search": {
 			"get": {
-				"operationId": "Search",
+				"operationId": "SearchTags",
 				"responses": {
 					"200": {
 						"description": "Ok",
