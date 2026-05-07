@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { BookOpen, Search } from 'lucide-react'
+import { Seo } from 'shared/seo'
 import { Badge, Panel } from 'shared/ui'
 
 const examples = [
@@ -24,6 +25,10 @@ const examples = [
 export default function SearchHelpPage() {
   return (
     <div className="docs-layout">
+      <Seo
+        title="Справка по поиску"
+        description="Синтаксис поиска neobooru: теги, операторы, фильтры и сортировка."
+      />
       <aside className="docs-nav">
         <Panel>
           <h1>

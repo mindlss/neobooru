@@ -2,6 +2,7 @@ import { FormEvent, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Upload } from 'lucide-react'
 import { useUploadMedia } from 'shared/api/generated/media/media'
+import { Seo } from 'shared/seo'
 import { Button, Panel, TextArea, TextInput } from 'shared/ui'
 import { useToast } from 'utils/useToast'
 
@@ -37,6 +38,7 @@ export default function UploadPage() {
 
   return (
     <div className="narrow-page">
+      <Seo title="Загрузка" description="Загрузка медиа в neobooru." noIndex />
       <Panel>
         <div className="section-heading compact">
           <div>

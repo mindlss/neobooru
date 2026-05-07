@@ -30,7 +30,7 @@
       "lib/*": ["lib/*"],
       "utils/*": ["utils/*"]
     },
-    "types": ["vite-plugin-svgr/client"]
+    "types": ["vite-plugin-svgr/client", "vitest/globals"]
   },
   "include": ["src"]
 }

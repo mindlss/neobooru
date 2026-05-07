@@ -28,6 +28,7 @@ import {
 import { previewOf } from 'entities/media/model'
 import { useSession } from 'features/auth/session'
 import { PERMISSIONS, STAFF_PERMISSIONS } from 'shared/config/permissions'
+import { Seo } from 'shared/seo'
 import {
   Badge,
   Button,
@@ -89,6 +90,7 @@ export default function AdminPage() {
 
   return (
     <div className="admin-layout">
+      <Seo title="Admin" description="Административный раздел neobooru." noIndex />
       <aside className="admin-nav">
         <h1>Admin</h1>
         {allowedSections.map((item) => (

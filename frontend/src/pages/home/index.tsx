@@ -5,6 +5,7 @@ import { useSearch } from 'shared/api/generated/search/search'
 import { usePopular } from 'shared/api/generated/tags/tags'
 import { isComicItem } from 'entities/media/model'
 import { ComicCard, MediaCard } from 'entities/media/ui'
+import { Seo } from 'shared/seo'
 import { Button, EmptyState, Panel, Select, Skeleton, TextInput } from 'shared/ui'
 
 export default function HomePage() {
@@ -38,6 +39,14 @@ export default function HomePage() {
 
   return (
     <div className="page-grid">
+      <Seo
+        title={q ? `Поиск: ${q}` : 'Свежие загрузки'}
+        description={
+          q
+            ? `Результаты поиска neobooru по запросу "${q}".`
+            : 'Свежие медиа, популярные теги и поиск по каталогу neobooru.'
+        }
+      />
       <aside className="sidebar">
         <Panel>
           <h2>Поиск</h2>

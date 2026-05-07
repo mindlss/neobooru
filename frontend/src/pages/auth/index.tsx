@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { LogIn, UserPlus } from 'lucide-react'
 import { useLogin, useRegister } from 'shared/api/generated/auth/auth'
 import { getGetMeQueryKey } from 'shared/api/generated/users/users'
+import { Seo } from 'shared/seo'
 import { Button, Panel, TextInput } from 'shared/ui'
 import { useToast } from 'utils/useToast'
 
@@ -54,6 +55,11 @@ export default function AuthPage({ mode }: { mode: Mode }) {
 
   return (
     <div className="auth-page">
+      <Seo
+        title={mode === 'login' ? 'Вход' : 'Регистрация'}
+        description="Страница авторизации neobooru."
+        noIndex
+      />
       <Panel>
         <div className="section-heading compact">
           <div>

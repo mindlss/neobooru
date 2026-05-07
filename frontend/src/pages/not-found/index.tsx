@@ -6,6 +6,7 @@ import rat from 'shared/ui/img/rat.gif'
 import styles from './notFound.module.scss'
 import { useToast } from 'utils/useToast'
 import { RAT_TIPS, RatTip } from 'shared/constants/ratTips'
+import { Seo } from 'shared/seo'
 
 export default function NotFoundPage() {
   const { addToast } = useToast()
@@ -35,6 +36,7 @@ export default function NotFoundPage() {
 
   return (
     <div className={styles.container}>
+      <Seo title="404" description="Страница не найдена." noIndex />
       <motion.div
         className={styles.content}
         initial={{ opacity: 0, scale: 0.95 }}

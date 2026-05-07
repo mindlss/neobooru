@@ -15,6 +15,7 @@ import {
 import { MediaCard } from 'entities/media/ui'
 import { useSession } from 'features/auth/session'
 import { PERMISSIONS } from 'shared/config/permissions'
+import { Seo } from 'shared/seo'
 import {
   Avatar,
   Badge,
@@ -82,6 +83,13 @@ export default function ProfilePage() {
 
   return (
     <div className="profile-dashboard">
+      <Seo
+        title={isMe ? 'Мой профиль' : user.username}
+        description={user.bio || `Публичный профиль ${user.username} на neobooru.`}
+        image={user.avatarUrl}
+        type="profile"
+        noIndex={isMe || isBanned}
+      />
       <aside className="profile-summary">
         <Panel>
           <div className="profile-head compact">

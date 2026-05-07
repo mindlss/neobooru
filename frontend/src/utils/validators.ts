@@ -16,7 +16,7 @@ export const passwordValidator = (value: string): string => {
   if (!/[A-Z]/.test(value)) return 'Добавьте заглавную букву'
   if (!/[a-z]/.test(value)) return 'Добавьте строчную букву'
   if (!/[0-9]/.test(value)) return 'Добавьте цифру'
-  if (!/[!@#$%^&*-_]/.test(value))
+  if (!/[!@#$%^&*_-]/.test(value))
     return 'Добавьте специальный символ (!@#$%^&*-_)'
 
   return ''

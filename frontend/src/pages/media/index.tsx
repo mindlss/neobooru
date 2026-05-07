@@ -15,6 +15,7 @@ import { useGetUserPublic } from 'shared/api/generated/users/users'
 import type { CommentDTO } from 'shared/api/generated/model'
 import { useSession } from 'features/auth/session'
 import { PERMISSIONS } from 'shared/config/permissions'
+import { Seo } from 'shared/seo'
 import {
   Avatar,
   Badge,
@@ -133,8 +134,23 @@ export default function MediaPage() {
   if (media.isLoading) return <Skeleton count={3} />
   if (!item) return <EmptyState>Медиа не найдено.</EmptyState>
 
+  const seoTitle = item.description?.trim() || `Медиа ${item.id.slice(0, 8)}`
+  const seoDescription = item.tags.length
+    ? `Медиа ${item.type.toLowerCase()} с тегами: ${item.tags
+        .slice(0, 8)
+        .map((tag) => tag.name)
+        .join(', ')}.`
+    : item.description || `Страница медиа ${item.id} на neobooru.`
+
   return (
     <div className="detail-layout">
+      <Seo
+        title={seoTitle}
+        description={seoDescription}
+        image={item.previewUrl || originalUrl}
+        type="article"
+        noIndex={item.isExplicit}
+      />
       <section className="viewer-panel">
         {source ? (
           item.type === 'VIDEO' ? (

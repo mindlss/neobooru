@@ -13,6 +13,7 @@ const EnvSchema = z.object({
         .enum(['development', 'test', 'production'])
         .default('development'),
     PORT: z.coerce.number().int().positive().max(65535).default(3000),
+    PUBLIC_APP_URL: z.string().url().default('http://localhost:5173'),
     LOG_LEVEL: z
         .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
         .default('info'),
