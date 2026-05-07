@@ -1,2 +1,3 @@
 docker/data
 docker/docker
+.env

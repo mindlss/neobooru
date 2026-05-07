@@ -4,11 +4,13 @@ import { logger } from './config/logger';
 import { prisma } from './lib/prisma';
 import { ensureBucket } from './lib/minio';
 import { startJobsRunner, stopJobsRunner } from './jobs/runner';
+import { ensureFirstAdmin } from './domain/auth/rbac.service';
 
 const app = createApp();
 
 async function start() {
     await ensureBucket();
+    await ensureFirstAdmin();
     startJobsRunner();
 
     const server = app.listen(env.PORT, () => {

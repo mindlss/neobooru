@@ -3,6 +3,7 @@ import { prisma } from '../src/lib/prisma';
 import { hashPassword } from '../src/domain/auth/password.service';
 import { env } from '../src/config/env';
 import { Permission } from '../src/domain/auth/permissions';
+import { DEFAULT_USER_PERMISSIONS } from '../src/domain/auth/rbac.service';
 
 // -------------------- helpers --------------------
 
@@ -308,32 +309,7 @@ async function seedRolesAndGrants(
         allPerms.map((p) => p.id),
     );
 
-    const userPermKeys: string[] = [
-        Permission.USERS_READ,
-        Permission.USERS_UPDATE_SELF,
-        Permission.USERS_AVATAR_UPDATE_SELF,
-
-        Permission.MEDIA_UPLOAD,
-        Permission.MEDIA_USE_OWN,
-
-        Permission.COMICS_CREATE,
-        Permission.COMICS_READ_OWN,
-        Permission.COMICS_EDIT_OWN,
-
-        Permission.COMMENTS_READ,
-        Permission.COMMENTS_CREATE,
-        Permission.COMMENTS_DELETE_OWN,
-
-        Permission.RATINGS_SET,
-        Permission.RATINGS_REMOVE,
-
-        Permission.FAVORITES_ADD,
-        Permission.FAVORITES_REMOVE,
-
-        Permission.REPORTS_CREATE,
-
-        Permission.MEDIA_TAGS_EDIT_OWN,
-    ];
+    const userPermKeys: string[] = DEFAULT_USER_PERMISSIONS;
 
     const userPermIds = userPermKeys
         .map((k) => permIdByKey.get(k))

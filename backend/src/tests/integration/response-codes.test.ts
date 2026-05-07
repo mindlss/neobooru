@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import { createApp } from '../../app';
 import { Permission } from '../../domain/auth/permissions';
-import { createApprovedMedia, registerUserWithPermissions, userPayload } from './helpers';
+import { registerUserWithPermissions, userPayload } from './helpers';
 
 const app = createApp();
 
@@ -58,7 +58,7 @@ describe('response codes and response structure integration', () => {
                 id: actor.user.id,
                 username: actor.user.username,
                 email: actor.user.email,
-                roles: expect.arrayContaining(['unverified']),
+                roles: expect.arrayContaining(['user']),
                 permissions: expect.arrayContaining([
                     Permission.USERS_UPDATE_SELF,
                 ]),
@@ -80,17 +80,15 @@ describe('response codes and response structure integration', () => {
 
     it('returns 403 with required permissions in details when auth lacks permission', async () => {
         const actor = await registerUserWithPermissions(app, []);
-        const media = await createApprovedMedia(actor.user.id);
 
         const res = await request(app)
-            .post(`/media/${media.id}/rating`)
+            .get('/jobs')
             .set('Cookie', actor.cookie)
-            .send({ value: 5 })
             .expect(403);
 
         expectErrorEnvelope(res.body, 'FORBIDDEN');
         expect(res.body.error.details).toEqual({
-            required: [Permission.RATINGS_SET],
+            required: [Permission.JOBS_RUN],
         });
     });
 

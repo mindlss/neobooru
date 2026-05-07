@@ -1,12 +1,8 @@
 import { env } from '../config/env';
-import { minio } from '../lib/minio';
+import { minio, presignObject as presignMinioObject } from '../lib/minio';
 
 export async function presignObject(key: string) {
-    return minio.presignedGetObject(
-        env.MINIO_BUCKET,
-        key,
-        env.MINIO_PRESIGN_EXPIRES,
-    );
+    return presignMinioObject(key);
 }
 
 export async function removeObjectsQuiet(keys: Array<string | null | undefined>) {

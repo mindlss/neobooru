@@ -11,6 +11,12 @@ import {
 
 const app = createApp();
 
+async function revokeDefaultUserRole(userId: string) {
+    await prisma.roleAssignment.deleteMany({
+        where: { userId, role: { key: 'user' } },
+    });
+}
+
 describe('ratings endpoints integration', () => {
     it('sets, updates, and removes a media rating through HTTP', async () => {
         const actor = await registerUserWithPermissions(app, [
@@ -82,6 +88,7 @@ describe('ratings endpoints integration', () => {
 
     it('returns authz, validation, and not-found errors from rating endpoints', async () => {
         const actor = await registerUserWithPermissions(app, []);
+        await revokeDefaultUserRole(actor.user.id);
         const media = await createApprovedMedia(actor.user.id);
 
         await request(app)
@@ -166,6 +173,7 @@ describe('favorites endpoints integration', () => {
 
     it('rejects favorite requests without required permissions or valid ids', async () => {
         const actor = await registerUserWithPermissions(app, []);
+        await revokeDefaultUserRole(actor.user.id);
         const media = await createApprovedMedia(actor.user.id);
 
         await request(app)

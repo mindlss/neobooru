@@ -11,6 +11,9 @@ import { requestIdMiddleware } from './http/middlewares/requestId.middleware';
 import { notFoundMiddleware } from './http/middlewares/notFound.middleware';
 import { errorMiddleware } from './http/middlewares/error.middleware';
 import { seoRouter } from './http/routes/seo.route';
+import { dbRouter } from './http/routes/db.route';
+import { healthRouter } from './http/routes/health.route';
+import { storageRouter } from './http/routes/storage.route';
 import {
     authRateLimit,
     commentsRateLimit,
@@ -77,6 +80,9 @@ export function createApp() {
     app.use(express.urlencoded({ extended: true }));
 
     app.use(cookieParser());
+    app.use(healthRouter);
+    app.use(dbRouter);
+    app.use(storageRouter);
     app.use(seoRouter);
 
     app.post('/auth/register', authRateLimit);

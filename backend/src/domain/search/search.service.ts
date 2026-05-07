@@ -1,6 +1,5 @@
 import { prisma } from '../../lib/prisma';
-import { minio } from '../../lib/minio';
-import { env } from '../../config/env';
+import { presignObject } from '../../lib/minio';
 import { ModerationStatus } from '@prisma/client';
 import type {
     Expr,
@@ -78,14 +77,6 @@ function buildComicVisibilityWhere(
     }
 
     return { ...where, createdById: viewer.id };
-}
-
-async function presign(key: string) {
-    return minio.presignedGetObject(
-        env.MINIO_BUCKET,
-        key,
-        env.MINIO_PRESIGN_EXPIRES,
-    );
 }
 
 function tagCondForViewer(
@@ -792,7 +783,7 @@ export async function searchMedia(params: {
                 tags,
                 favorite,
 
-                previewUrl: m.previewKey ? await presign(m.previewKey) : null,
+                previewUrl: m.previewKey ? await presignObject(m.previewKey) : null,
             };
         }),
     );
@@ -906,7 +897,7 @@ export async function searchComics(params: {
         slice.map(async (c: any) => {
             const previewKey =
                 c.lastPageMedia?.previewKey ?? c.coverMedia?.previewKey ?? null;
-            const previewUrl = previewKey ? await presign(previewKey) : null;
+            const previewUrl = previewKey ? await presignObject(previewKey) : null;
 
             return {
                 id: c.id,

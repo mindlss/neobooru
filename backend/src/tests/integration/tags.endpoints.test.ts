@@ -172,7 +172,7 @@ describe('tags endpoints integration', () => {
     it('returns tag endpoint authz and validation errors', async () => {
         const actor = await registerUserWithPermissions(app, []);
         const category = await ensureGeneralCategory();
-        const media = await createApprovedMedia(actor.user.id);
+        const media = await createApprovedMedia(null);
 
         await request(app)
             .post('/tags')

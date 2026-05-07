@@ -25,6 +25,10 @@ function loadTestEnv() {
     process.env.MINIO_ENDPOINT ??= 'localhost';
     process.env.MINIO_PORT ??= '9000';
     process.env.MINIO_USE_SSL ??= 'false';
+    process.env.MINIO_REGION ??= 'us-east-1';
+    process.env.MINIO_PUBLIC_ENDPOINT ??= 'localhost';
+    process.env.MINIO_PUBLIC_PORT ??= '9000';
+    process.env.MINIO_PUBLIC_USE_SSL ??= 'false';
     process.env.MINIO_ACCESS_KEY ??= 'test';
     process.env.MINIO_SECRET_KEY ??= 'test';
     process.env.MINIO_BUCKET ??= 'media-test';

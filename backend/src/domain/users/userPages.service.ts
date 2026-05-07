@@ -1,6 +1,5 @@
 import { prisma } from '../../lib/prisma';
-import { minio } from '../../lib/minio';
-import { env } from '../../config/env';
+import { presignObject } from '../../lib/minio';
 import { ModerationStatus, Prisma } from '@prisma/client';
 import { Permission } from '../auth/permissions';
 import type { Principal } from '../auth/principal';
@@ -43,14 +42,6 @@ function buildVisibilityWhere(params: {
     if (!allowExplicit) where.isExplicit = false;
 
     return where;
-}
-
-async function presign(key: string) {
-    return minio.presignedGetObject(
-        env.MINIO_BUCKET,
-        key,
-        env.MINIO_PRESIGN_EXPIRES,
-    );
 }
 
 function filterTagLinksForViewer(tagLinks: any[], viewer: Viewer) {
@@ -197,7 +188,7 @@ export async function listUserUploads(params: {
     const withUrls = await Promise.all(
         data.map(async (m) => ({
             ...m,
-            previewUrl: m.previewKey ? await presign(m.previewKey) : null,
+            previewUrl: m.previewKey ? await presignObject(m.previewKey) : null,
         })),
     );
 
@@ -275,7 +266,7 @@ export async function listUserFavorites(params: {
     const withUrls = await Promise.all(
         mediaRows.map(async (m) => ({
             ...m,
-            previewUrl: m.previewKey ? await presign(m.previewKey) : null,
+            previewUrl: m.previewKey ? await presignObject(m.previewKey) : null,
         })),
     );
 
@@ -453,7 +444,7 @@ export async function listUserRatings(params: {
             media: {
                 ...x.media,
                 previewUrl: x.media.previewKey
-                    ? await presign(x.media.previewKey)
+                    ? await presignObject(x.media.previewKey)
                     : null,
             },
         })),

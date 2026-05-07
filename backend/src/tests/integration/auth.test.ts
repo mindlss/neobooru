@@ -42,9 +42,7 @@ describe('auth integration', () => {
         });
 
         expect(user).not.toBeNull();
-        expect(user?.assignments.map((a) => a.role.key)).toContain(
-            'unverified',
-        );
+        expect(user?.assignments.map((a) => a.role.key)).toContain('user');
     });
 
     it('logs in with registered credentials and rejects wrong password', async () => {

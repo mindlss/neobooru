@@ -1,6 +1,5 @@
 import { prisma } from '../../lib/prisma';
-import { minio } from '../../lib/minio';
-import { env } from '../../config/env';
+import { presignObject } from '../../lib/minio';
 import { ModerationStatus } from '@prisma/client';
 
 import { Permission } from '../auth/permissions';
@@ -39,14 +38,6 @@ function buildVisibilityWhere(p: Principal) {
     const explicitFilter = canReadExplicit(p) ? {} : { isExplicit: false };
 
     return { ...deletedFilter, ...moderationFilter, ...explicitFilter };
-}
-
-async function presign(key: string) {
-    return minio.presignedGetObject(
-        env.MINIO_BUCKET,
-        key,
-        env.MINIO_PRESIGN_EXPIRES,
-    );
 }
 
 function filterTagLinksForViewer(tagLinks: any[], p: Principal) {
@@ -162,9 +153,9 @@ export async function getMediaByIdVisible(id: string, principal: Principal) {
 
     const dto = mapMedia(media, principal);
 
-    const originalUrl = await presign(media.originalKey);
+    const originalUrl = await presignObject(media.originalKey);
     const previewUrl = media.previewKey
-        ? await presign(media.previewKey)
+        ? await presignObject(media.previewKey)
         : null;
 
     return { ...dto, originalUrl, previewUrl };
@@ -208,7 +199,7 @@ export async function listMediaVisible(params: {
     const withUrls = await Promise.all(
         data.map(async (m) => ({
             ...m,
-            previewUrl: m.previewKey ? await presign(m.previewKey) : null,
+            previewUrl: m.previewKey ? await presignObject(m.previewKey) : null,
         })),
     );
 
@@ -276,9 +267,9 @@ export async function getMediaByIdOrBlocked(
     }
 
     const dto = mapMedia(media, principal);
-    const originalUrl = await presign(media.originalKey);
+    const originalUrl = await presignObject(media.originalKey);
     const previewUrl = media.previewKey
-        ? await presign(media.previewKey)
+        ? await presignObject(media.previewKey)
         : null;
 
     return { kind: 'ok', media: { ...dto, originalUrl, previewUrl } as any };

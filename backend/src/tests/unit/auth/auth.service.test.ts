@@ -7,19 +7,17 @@ const { prisma, hashPassword, verifyPassword, signAccessToken, signRefreshToken 
                 create: vi.fn(),
                 findUnique: vi.fn(),
             },
-            role: {
-                findUnique: vi.fn(),
-                create: vi.fn(),
-            },
-            roleAssignment: {
-                upsert: vi.fn(),
-            },
         },
         hashPassword: vi.fn(),
         verifyPassword: vi.fn(),
         signAccessToken: vi.fn(),
         signRefreshToken: vi.fn(),
     }));
+
+const { ensureDefaultRolesAndPermissions, assignRoleToUser } = vi.hoisted(() => ({
+    ensureDefaultRolesAndPermissions: vi.fn(),
+    assignRoleToUser: vi.fn(),
+}));
 
 vi.mock('../../../lib/prisma', () => ({ prisma }));
 vi.mock('../../../domain/auth/password.service', () => ({
@@ -29,6 +27,10 @@ vi.mock('../../../domain/auth/password.service', () => ({
 vi.mock('../../../domain/auth/token.service', () => ({
     signAccessToken,
     signRefreshToken,
+}));
+vi.mock('../../../domain/auth/rbac.service', () => ({
+    ensureDefaultRolesAndPermissions,
+    assignRoleToUser,
 }));
 
 import { loginUser, registerUser } from '../../../domain/auth/auth.service';
@@ -40,9 +42,12 @@ describe('auth service', () => {
         verifyPassword.mockResolvedValue(true);
         signAccessToken.mockReturnValue('access-token');
         signRefreshToken.mockReturnValue('refresh-token');
+        ensureDefaultRolesAndPermissions.mockResolvedValue({
+            userRole: { id: 'role-user', key: 'user' },
+        });
     });
 
-    it('registers a user, creates missing unverified role, assigns it, and returns tokens', async () => {
+    it('registers a user, assigns the default user role, and returns tokens', async () => {
         const user = {
             id: 'user-1',
             username: 'alice',
@@ -50,8 +55,6 @@ describe('auth service', () => {
             password: 'hash-1',
         };
         prisma.user.create.mockResolvedValue(user);
-        prisma.role.findUnique.mockResolvedValue(null);
-        prisma.role.create.mockResolvedValue({ id: 'role-1', key: 'unverified' });
 
         await expect(
             registerUser({
@@ -73,34 +76,24 @@ describe('auth service', () => {
                 password: 'hash-1',
             },
         });
-        expect(prisma.role.create).toHaveBeenCalledWith({
-            data: {
-                key: 'unverified',
-                name: 'Unverified',
-                isSystem: true,
-                description: 'Auto-created default role',
-            },
-        });
-        expect(prisma.roleAssignment.upsert).toHaveBeenCalledWith({
-            where: {
-                userId_roleId: { userId: 'user-1', roleId: 'role-1' },
-            },
-            update: {},
-            create: {
-                userId: 'user-1',
-                roleId: 'role-1',
-                createdById: null,
-            },
+        expect(ensureDefaultRolesAndPermissions).toHaveBeenCalled();
+        expect(assignRoleToUser).toHaveBeenCalledWith({
+            userId: 'user-1',
+            roleId: 'role-user',
+            createdById: null,
         });
         expect(signAccessToken).toHaveBeenCalledWith({ sub: 'user-1' });
         expect(signRefreshToken).toHaveBeenCalledWith({ sub: 'user-1' });
     });
 
-    it('registers with an existing unverified role', async () => {
+    it('registers with an existing default user role', async () => {
         prisma.user.create.mockResolvedValue({ id: 'user-1' });
-        prisma.role.findUnique.mockResolvedValue({
-            id: 'role-existing',
-            key: 'unverified',
+        ensureDefaultRolesAndPermissions.mockResolvedValue({
+            adminRole: { id: 'role-admin', key: 'admin' },
+            userRole: {
+                id: 'role-existing',
+                key: 'user',
+            },
         });
 
         await registerUser({
@@ -109,17 +102,11 @@ describe('auth service', () => {
             password: 'secret',
         });
 
-        expect(prisma.role.create).not.toHaveBeenCalled();
-        expect(prisma.roleAssignment.upsert).toHaveBeenCalledWith(
-            expect.objectContaining({
-                where: {
-                    userId_roleId: {
-                        userId: 'user-1',
-                        roleId: 'role-existing',
-                    },
-                },
-            }),
-        );
+        expect(assignRoleToUser).toHaveBeenCalledWith({
+            userId: 'user-1',
+            roleId: 'role-existing',
+            createdById: null,
+        });
     });
 
     it('logs in with a verified password and returns fresh tokens', async () => {

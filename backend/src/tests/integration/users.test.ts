@@ -2,6 +2,7 @@ import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 
 import { createApp } from '../../app';
+import { Permission } from '../../domain/auth/permissions';
 
 const app = createApp();
 
@@ -30,8 +31,8 @@ describe('users integration', () => {
         expect(res.body).toMatchObject({
             username: body.username,
             email: body.email,
-            roles: ['unverified'],
-            permissions: [],
+            roles: ['user'],
+            permissions: expect.arrayContaining([Permission.MEDIA_UPLOAD]),
         });
         expect(res.body.id).toEqual(expect.any(String));
     });
